@@ -104,5 +104,6 @@
       <Filter>KamataEngine\Include</Filter>
     </ClInclude>
     <ClInclude Include="Vector3.hpp" />
+    <ClInclude Include="Matrix4.hpp" />
   </ItemGroup>
 </Project>
