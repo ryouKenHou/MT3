@@ -46,43 +46,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Matrix4x4 m1 = {
-			3.2f, 0.7f, 9.6f, 4.4f,
-			5.5f, 1.3f, 7.8f, 2.1f,
-			6.9f, 8.0f, 2.6f, 1.0f,
-			0.5f, 7.2f, 5.1f, 3.3f
+		Vector3 translate = Vector3(4.1f, 2.6f, 0.8f);
+		Vector3 scale = Vector3(1.5f, 5.2f, 7.3f);
+
+		Matrix4x4 translateMatrix = Matrix4x4::MakeTranslateMatrix(translate);
+		Matrix4x4 scaleMatrix = Matrix4x4::MakeScaleMatrix(scale);
+		Vector3 point = Vector3(2.3f, 3.8f, 1.4f);
+		Matrix4x4 transformMatrix = {
+			1.0f, 2.0f, 3.0f, 4.0f,
+			3.0f, 1.0f , 1.0f, 2.0f,
+			1.0f, 4.0f , 2.0f, 3.0f,
+			2.0f, 2.0f , 1.0f, 3.0f,
 		};
 
-		Matrix4x4 m2 = {
-			4.1f, 6.5f, 3.3f, 2.2f,
-			8.8f, 0.6f, 9.9f, 7.7f,
-			1.1f, 5.5f, 6.6f, 0.0f,
-			3.3f, 9.9f, 8.8f, 2.2f
-		};
-
-		Matrix4x4 resultAdd = Matrix4x4::Add(m1, m2);
-		Matrix4x4 resultSub = Matrix4x4::Subtract(m1, m2);
-		Matrix4x4 resultMul = Matrix4x4::Multiply(m1, m2);
-		Matrix4x4 inverseM1 = Matrix4x4::Inverse(m1);
-		Matrix4x4 inverseM2 = Matrix4x4::Inverse(m2);
-		Matrix4x4 transposeM1 = Matrix4x4::Transpose(m1);
-		Matrix4x4 transposeM2 = Matrix4x4::Transpose(m2);
-		Matrix4x4 identity = Matrix4x4::Identity();
-
+		Vector3 transformedPoint = Matrix4x4::TransformPoint(transformMatrix, point);
 
 		///
 		/// ↑更新処理ここまで
 		///
 		
-		MatrixScreenPrintf(0, 0, resultAdd, "ADD: ");
-		MatrixScreenPrintf(0, kRowHeight * 5, resultSub, "Subtract: ");
-		MatrixScreenPrintf(0, kRowHeight * 5 * 2, resultMul, "Multiply: ");
-		MatrixScreenPrintf(0, kRowHeight * 5 * 3, inverseM1, "InverseM1: ");
-		MatrixScreenPrintf(0, kRowHeight * 5 * 4, inverseM2, "InverseM2: ");
-
-		MatrixScreenPrintf(kColumnWidth* 5, 0, transposeM1, "TransposeM1: ");
-		MatrixScreenPrintf(kColumnWidth * 5, kRowHeight * 5, transposeM2, "TransposeM2: ");
-		MatrixScreenPrintf(kColumnWidth * 5, kRowHeight * 5 * 2, identity, "Identity: ");
+		VectorScreenPrintf(0, 0, transformedPoint, "transformed");
+		MatrixScreenPrintf(0, 40, translateMatrix, "translateMatrix");
+		MatrixScreenPrintf(0, 40 + kRowHeight * 5, scaleMatrix, "scaleMatrix");
 
 		///
 		/// ↓描画処理ここから
