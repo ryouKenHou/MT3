@@ -224,4 +224,35 @@ struct Matrix4x4 {
 		return Vector3(x, y, z);
 	}
 
+    static Matrix4x4 MakeRotationXMatrix(float radian) {
+        float cosTheta = cos(radian);
+        float sinTheta = sin(radian);
+        return Matrix4x4(
+            1, 0, 0, 0,
+            0, cosTheta, sinTheta, 0,
+            0, -sinTheta, cosTheta, 0,
+            0, 0, 0, 1
+        );
+	}
+
+    static Matrix4x4 MakeRotationYMatrix(float radian) {
+        float cosTheta = cos(radian);
+        float sinTheta = sin(radian);
+        return Matrix4x4(
+            cosTheta, 0, -sinTheta, 0,
+            0, 1, 0, 0,
+            sinTheta, 0, cosTheta, 0,
+            0, 0, 0, 1
+        );
+    }
+    static Matrix4x4 MakeRotationZMatrix(float radian) {
+        float cosTheta = cos(radian);
+        float sinTheta = sin(radian);
+        return Matrix4x4(
+            cosTheta, sinTheta, 0, 0,
+            -sinTheta, cosTheta, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        );
+	}
 };
