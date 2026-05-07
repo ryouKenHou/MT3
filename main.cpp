@@ -46,28 +46,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Vector3 translate = Vector3(4.1f, 2.6f, 0.8f);
-		Vector3 scale = Vector3(1.5f, 5.2f, 7.3f);
-
-		Matrix4x4 translateMatrix = Matrix4x4::MakeTranslateMatrix(translate);
-		Matrix4x4 scaleMatrix = Matrix4x4::MakeScaleMatrix(scale);
-		Vector3 point = Vector3(2.3f, 3.8f, 1.4f);
-		Matrix4x4 transformMatrix = {
-			1.0f, 2.0f, 3.0f, 4.0f,
-			3.0f, 1.0f , 1.0f, 2.0f,
-			1.0f, 4.0f , 2.0f, 3.0f,
-			2.0f, 2.0f , 1.0f, 3.0f,
-		};
-
-		Vector3 transformedPoint = Matrix4x4::TransformPoint(transformMatrix, point);
+		Vector3 rotate = Vector3(0.4f, 1.43f, -0.8f);
+		Matrix4x4 rotX = Matrix4x4::MakeRotationXMatrix(rotate.x);
+		Matrix4x4 rotY = Matrix4x4::MakeRotationYMatrix(rotate.y);
+		Matrix4x4 rotZ = Matrix4x4::MakeRotationZMatrix(rotate.z);
+		Matrix4x4 rot = rotX * rotY * rotZ;
 
 		///
 		/// ↑更新処理ここまで
 		///
 		
-		VectorScreenPrintf(0, 0, transformedPoint, "transformed");
-		MatrixScreenPrintf(0, 40, translateMatrix, "translateMatrix");
-		MatrixScreenPrintf(0, 40 + kRowHeight * 5, scaleMatrix, "scaleMatrix");
+		MatrixScreenPrintf(0, 0, rotX, "rotX");
+		MatrixScreenPrintf(0, kRowHeight* 5, rotY, "rotY");
+		MatrixScreenPrintf(0, kRowHeight * 10, rotZ, "rotZ");
+		MatrixScreenPrintf(0, kRowHeight * 15, rot, "rotXYZ");
+		
 
 		///
 		/// ↓描画処理ここから
