@@ -255,4 +255,13 @@ struct Matrix4x4 {
             0, 0, 0, 1
         );
 	}
+
+    static Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotation, const Vector3& translation) {
+        Matrix4x4 translateMatrix = MakeTranslateMatrix(translation);
+        Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
+        Matrix4x4 rotationXMatrix = MakeRotationXMatrix(rotation.x);
+        Matrix4x4 rotationYMatrix = MakeRotationYMatrix(rotation.y);
+        Matrix4x4 rotationZMatrix = MakeRotationZMatrix(rotation.z);
+        return scaleMatrix * ( rotationXMatrix * rotationYMatrix * rotationZMatrix) * translateMatrix;
+	}
 };
