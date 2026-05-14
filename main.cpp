@@ -33,6 +33,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char keys[256] = {0};
 	char preKeys[256] = {0};
 
+	Vector3 rotate = { 0.f, 0.f, 0.f };
+	Vector3 translate = { 0.f, 0.f, 0.f };
+	Vector3 cameraPos = { 0.f, 0.f, -5.f };
+
+	Vector3 localVertices[3] = {
+		Vector3(0, 1, 0),
+		Vector3(-1, -1, 0),
+		Vector3(1, -1, 0)
+	};
+
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -46,17 +56,51 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Matrix4x4 orthographicMatrix = Matrix4x4::MakeOrthographicMatrix(-160.f, 160.f, 200.0f, 300.f, 0.0f, 1000.f);
-		Matrix4x4 perspectiveMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.63f, 1.33f, 0.1f, 1000.f);
-		Matrix4x4 viewportMatrix = Matrix4x4::MakeViewportMatrix(100.f, 200.f, 600.f, 300.f, 0.0f, 1.0f);
+		Vector3 v1(1.2f, -3.9f, 2.5f);
+		Vector3 v2(2.8f, 0.4f, -1.3f);
+		Vector3 cross = Vector3::Cross(v1, v2);
+
+		if (keys[DIK_W]) {
+			translate.z += 0.1f;
+		}
+		if (keys[DIK_S]) {
+			translate.z -= 0.1f;
+		}
+		if (keys[DIK_A]) {
+			translate.x -= 0.1f;
+		}
+		if (keys[DIK_D]) {
+			translate.x += 0.1f;
+		}
+
+		rotate.y += 0.03f;
+
+		Matrix4x4 worldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), rotate, translate);
+		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), cameraPos);
+		Matrix4x4 viewMatrix = Matrix4x4::Inverse(cameraMatrix);
+		Matrix4x4 projectionMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
+		Matrix4x4 wvpMatrix = worldMatrix * viewMatrix * projectionMatrix;
+		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
+		Vector3 screenVertices[3];
+		for (uint32_t i = 0; i < 3; ++i) {
+			Vector3 vertex = Transform(localVertices[i], wvpMatrix);
+			screenVertices[i] = Transform(vertex, viewPortMatrix);
+		}
+
+
 		///
 		/// ↑更新処理ここまで
 		///
 		
-		MatrixScreenPrintf(0, 0, orthographicMatrix, "Orthographic Matrix");
-		MatrixScreenPrintf(0, kRowHeight * 5, perspectiveMatrix, "Perspective Matrix");
-		MatrixScreenPrintf(0, kRowHeight * 10, viewportMatrix, "Viewport Matrix");
-		
+		VectorScreenPrintf(0, 0, cross, "cross: ");
+
+		Novice::DrawTriangle(
+			static_cast<int>(screenVertices[0].x), static_cast<int>(screenVertices[0].y),
+			static_cast<int>(screenVertices[1].x), static_cast<int>(screenVertices[1].y),
+			static_cast<int>(screenVertices[2].x), static_cast<int>(screenVertices[2].y),
+			RED, kFillModeSolid
+		);
+
 
 		///
 		/// ↓描画処理ここから
