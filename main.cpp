@@ -46,20 +46,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 
-		Vector3 rotate = Vector3(0.4f, 1.43f, -0.8f);
-		Matrix4x4 rotX = Matrix4x4::MakeRotationXMatrix(rotate.x);
-		Matrix4x4 rotY = Matrix4x4::MakeRotationYMatrix(rotate.y);
-		Matrix4x4 rotZ = Matrix4x4::MakeRotationZMatrix(rotate.z);
-		Matrix4x4 rot = rotX * rotY * rotZ;
+		Vector3 scale = Vector3(1.2f, 0.79f, -2.1f);		
+		Vector3 rotation = Vector3(0.4f, 1.43f, -0.8f);
+		Vector3 translation = Vector3(2.7f, -4.15f,1.57f);
+		Matrix4x4 worldMatrix = Matrix4x4::MakeAffineMatrix(scale, rotation, translation);
 
 		///
 		/// ↑更新処理ここまで
 		///
 		
-		MatrixScreenPrintf(0, 0, rotX, "rotX");
-		MatrixScreenPrintf(0, kRowHeight* 5, rotY, "rotY");
-		MatrixScreenPrintf(0, kRowHeight * 10, rotZ, "rotZ");
-		MatrixScreenPrintf(0, kRowHeight * 15, rot, "rotXYZ");
+		MatrixScreenPrintf(0, 0, worldMatrix, "WorldMatrix");
 		
 
 		///
