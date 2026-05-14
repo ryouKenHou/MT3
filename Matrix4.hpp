@@ -264,4 +264,34 @@ struct Matrix4x4 {
         Matrix4x4 rotationZMatrix = MakeRotationZMatrix(rotation.z);
         return scaleMatrix * ( rotationXMatrix * rotationYMatrix * rotationZMatrix) * translateMatrix;
 	}
+
+    static Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspect, float nearZ, float farZ) {
+        float f = 1.0f / tan(fovY / 2.0f);
+        return Matrix4x4(
+            f / aspect, 0, 0, 0,
+            0, f, 0, 0,
+            0, 0, farZ  / ( farZ - nearZ), 1,
+            0, 0, (-nearZ * farZ ) / (farZ - nearZ), 0
+        );
+	}
+
+    static Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearZ, float farZ) {
+        return Matrix4x4(
+            2 / (right - left), 0, 0, 0,
+            0, 2 / (top - bottom), 0, 0,
+            0, 0, 1 / (farZ - nearZ), 0,
+            (right + left) / ( left - right), (top + bottom) / ( bottom - top),  nearZ / (nearZ-farZ ), 1
+        );
+	}
+
+    static Matrix4x4 MakeViewportMatrix(float left, float top , float width, float height, float minZ, float maxZ) {
+        return Matrix4x4(
+            width / 2, 0, 0, 0,
+            0, -height / 2, 0, 0,
+            0, 0, maxZ - minZ, 0,
+            left + width / 2, top + height / 2, minZ, 1
+		);
+	}
+
+
 };
