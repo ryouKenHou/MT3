@@ -19,6 +19,21 @@ struct Sphere {
 	float radius;
 };
 
+struct Line {
+	Vector3 origin;
+	Vector3 diff;
+};
+
+struct Ray {
+	Vector3 origin;
+	Vector3 diff;
+};
+
+struct Segment {
+	Vector3 origin;
+	Vector3 diff;
+};
+
 // ==============================================================================
 // 関数宣言
 // =============================================================================
@@ -93,6 +108,20 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 	}
 }
 
+Vector3 Project(const Vector3& v1, const Vector3& v2) {
+	Vector3 normalizedV2 = v2.Normalized();
+	float dotProduct = v1.Dot(normalizedV2);
+	return normalizedV2 * dotProduct;
+}
+
+Vector3 CosestPoint(const Vector3& point, const Segment& segment) {
+	Vector3 toPoint = point - segment.origin;
+	
+	
+	return segment.origin+Project(toPoint, segment.diff); // Closest to the middle of the segment
+	
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -105,7 +134,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
-	Sphere sphere = { Vector3(0, 0, 0), 1.0f };
+
+	Segment segment{ {-2.f, -1.f, 0.f}, {3.f, 2.f, 2.f} };
+	Vector3 point{ -1.5f, 0.6f, 0.6f };
+
+	Vector3 project = Project(point - segment.origin, segment.diff);
+	Vector3 closestPoint = CosestPoint(point, segment);
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -119,12 +153,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 		/// ↓更新処理ここから
 		///
-		ImGui::Begin("Camera Info");
-		ImGui::DragFloat3("Camera Position", &cameraPos.x, 0.1f);
-		ImGui::DragFloat3("Camera Rotation", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("Sphere Position", &sphere.center.x, 0.1f);
-		ImGui::DragFloat("Sphere Radius", &sphere.radius, 0.1f, 0.1f, 10.0f);
+		ImGui::Begin("window");
+		ImGui::DragFloat3("Point", &point.x, 0.1f);
+		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.1f);
+		ImGui::DragFloat3("Segment Diff", &segment.diff.x, 0.1f);
+		ImGui::InputFloat3("Project", &project.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
 		ImGui::End();
+		project = Project(point - segment.origin, segment.diff);
+		closestPoint = CosestPoint(point, segment);
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
 		Matrix4x4 viewMatrix = Matrix4x4::Inverse(cameraMatrix);
@@ -137,7 +173,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawSphere(sphere, viewMatrix * projectionMatrix, viewPortMatrix, BLACK);
+		Vector3 Start =Transform(segment.origin, viewMatrix * projectionMatrix * viewPortMatrix);
+		Vector3 End = Transform(segment.origin + segment.diff, viewMatrix * projectionMatrix* viewPortMatrix);
+		Novice::DrawLine(static_cast<int>(Start.x), static_cast<int>(Start.y), static_cast<int>(End.x), static_cast<int>(End.y), 0xFFFFFFFF);
+
+		Sphere pointSphere{ point, 0.01f };
+		Sphere closestPointSphere{ closestPoint, 0.01f };
+		DrawSphere(pointSphere, viewMatrix * projectionMatrix, viewPortMatrix, 0xFF0000FF);
+		DrawSphere(closestPointSphere, viewMatrix * projectionMatrix, viewPortMatrix, 0x000000FF);
+
 		///
 		/// ↓描画処理ここから
 		///
