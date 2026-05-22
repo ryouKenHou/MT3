@@ -116,10 +116,13 @@ Vector3 Project(const Vector3& v1, const Vector3& v2) {
 
 Vector3 CosestPoint(const Vector3& point, const Segment& segment) {
 	Vector3 toPoint = point - segment.origin;
-	
-	
-	return segment.origin+Project(toPoint, segment.diff); // Closest to the middle of the segment
-	
+
+	// clampするためのtを求める
+	float t = toPoint.Dot(segment.diff) / segment.diff.Dot(segment.diff);
+	t = max(0.0f, min(1.0f, t));
+
+	// 最近点を求める
+	return segment.origin + segment.diff * t;	
 }
 
 // Windowsアプリでのエントリーポイント(main関数)
