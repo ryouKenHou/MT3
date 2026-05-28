@@ -34,6 +34,11 @@ struct Segment {
 	Vector3 diff;
 };
 
+struct Plane{
+	Vector3 normal;
+	float distance;
+};
+
 // ==============================================================================
 // 関数宣言
 // =============================================================================
@@ -108,6 +113,45 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 	}
 }
 
+Vector3 Perpendicular(const Vector3& v1) {
+	if (v1.x != 0.f && v1.y != 0.f) {
+		return  Vector3(-v1.y, v1.x, 0.f); 
+	}
+	return Vector3(0.f, -v1.z, v1.y); 
+}
+
+void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	Vector3 center = plane.normal * plane.distance;
+	Vector3 perpendicular[4];
+	perpendicular[0] = Perpendicular(plane.normal).Normalized();
+	perpendicular[1] = {-perpendicular[0].x, -perpendicular[0].y, -perpendicular[0].z};
+	perpendicular[2] = Vector3::Cross(plane.normal, perpendicular[0]);
+	perpendicular[3] = { -perpendicular[2].x, -perpendicular[2].y, -perpendicular[2].z };
+	Vector3 vertices[4];
+	for (int i = 0; i < 4; ++i) {
+		Vector3 extend = perpendicular[i] * 2.f;
+		Vector3 point = center + extend;
+		vertices[i] = Transform(point, viewProjectionMatrix * viewportMatrix);
+	}
+	Novice::DrawLine(
+		static_cast<int>(vertices[3].x), static_cast<int>(vertices[3].y),
+		static_cast<int>(vertices[1].x), static_cast<int>(vertices[1].y), color
+	);
+	Novice::DrawLine(
+		static_cast<int>(vertices[1].x), static_cast<int>(vertices[1].y),
+		static_cast<int>(vertices[2].x), static_cast<int>(vertices[2].y), color
+	);
+	Novice::DrawLine(
+		static_cast<int>(vertices[0].x), static_cast<int>(vertices[0].y),
+		static_cast<int>(vertices[2].x), static_cast<int>(vertices[2].y), color
+	);
+	Novice::DrawLine(
+		static_cast<int>(vertices[3].x), static_cast<int>(vertices[3].y),
+		static_cast<int>(vertices[0].x), static_cast<int>(vertices[0].y), color
+	);
+
+}
+
 Vector3 Project(const Vector3& v1, const Vector3& v2) {
 	Vector3 normalizedV2 = v2.Normalized();
 	float dotProduct = v1.Dot(normalizedV2);
@@ -131,6 +175,11 @@ bool isCollision(const Sphere& s1, const Sphere& s2) {
 	return centerDiff.Dot(centerDiff) <= radiusSum * radiusSum;
 }
 
+bool isCollision(const Sphere& sphere, const Plane& plane) {
+	float distance = sphere.center.Dot(plane.normal) - plane.distance;
+	return fabs(distance) <= sphere.radius;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -145,10 +194,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
 	Vector3 pos1 = { 0, 0, 0 };
-	Vector3 pos2 = { 1, 0, 1 };
 
 	Sphere sphere1{ pos1, 0.5f };
-	Sphere sphere2{ pos2, 1.f };
+	Plane plane1{ Vector3(0, 1, 1), 1 };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -167,16 +215,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::DragFloat3("sphere1Pos", &sphere1.center.x, 0.1f);
 		ImGui::DragFloat("sphere1Radius", &sphere1.radius, 0.1f);
-		ImGui::DragFloat3("sphere2Pos", &sphere2.center.x, 0.1f);
-		ImGui::DragFloat("sphere2Radius", &sphere2.radius, 0.1f);
+		ImGui::DragFloat3("plane1Normal", &plane1.normal.x, 0.1f);
+		ImGui::DragFloat("plane1Distance", &plane1.distance, 0.1f);
 		ImGui::End();
+		plane1.normal = plane1.normal.Normalized();
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
 		Matrix4x4 viewMatrix = Matrix4x4::Inverse(cameraMatrix);
 		Matrix4x4 projectionMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
 		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
 
-		bool collision = isCollision(sphere1, sphere2);
+		bool collision = isCollision(sphere1,plane1);
 
 		///
 		/// ↑更新処理ここまで
@@ -186,7 +235,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 
 		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-		DrawSphere(sphere2, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
+		DrawPlane(plane1, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 
 		///
 		/// ↓描画処理ここから
