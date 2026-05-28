@@ -122,7 +122,13 @@ Vector3 CosestPoint(const Vector3& point, const Segment& segment) {
 	t = max(0.0f, min(1.0f, t));
 
 	// 最近点を求める
-	return segment.origin + segment.diff * t;	
+	return segment.origin + segment.diff * t;
+}
+
+bool isCollision(const Sphere& s1, const Sphere& s2) {
+	Vector3 centerDiff = s2.center - s1.center;
+	float radiusSum = s1.radius + s2.radius;
+	return centerDiff.Dot(centerDiff) <= radiusSum * radiusSum;
 }
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -138,11 +144,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Segment segment{ {-2.f, -1.f, 0.f}, {3.f, 2.f, 2.f} };
-	Vector3 point{ -1.5f, 0.6f, 0.6f };
+	Vector3 pos1 = { 0, 0, 0 };
+	Vector3 pos2 = { 1, 0, 1 };
 
-	Vector3 project = Project(point - segment.origin, segment.diff);
-	Vector3 closestPoint = CosestPoint(point, segment);
+	Sphere sphere1{ pos1, 0.5f };
+	Sphere sphere2{ pos2, 1.f };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -157,18 +163,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓更新処理ここから
 		///
 		ImGui::Begin("window");
-		ImGui::DragFloat3("Point", &point.x, 0.1f);
-		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.1f);
-		ImGui::DragFloat3("Segment Diff", &segment.diff.x, 0.1f);
-		ImGui::InputFloat3("Project", &project.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
+		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
+		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
+		ImGui::DragFloat3("sphere1Pos", &sphere1.center.x, 0.1f);
+		ImGui::DragFloat("sphere1Radius", &sphere1.radius, 0.1f);
+		ImGui::DragFloat3("sphere2Pos", &sphere2.center.x, 0.1f);
+		ImGui::DragFloat("sphere2Radius", &sphere2.radius, 0.1f);
 		ImGui::End();
-		project = Project(point - segment.origin, segment.diff);
-		closestPoint = CosestPoint(point, segment);
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
 		Matrix4x4 viewMatrix = Matrix4x4::Inverse(cameraMatrix);
 		Matrix4x4 projectionMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
 		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
+
+		bool collision = isCollision(sphere1, sphere2);
 
 		///
 		/// ↑更新処理ここまで
@@ -176,14 +184,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		Vector3 Start =Transform(segment.origin, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 End = Transform(segment.origin + segment.diff, viewMatrix * projectionMatrix* viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(Start.x), static_cast<int>(Start.y), static_cast<int>(End.x), static_cast<int>(End.y), 0xFFFFFFFF);
 
-		Sphere pointSphere{ point, 0.01f };
-		Sphere closestPointSphere{ closestPoint, 0.01f };
-		DrawSphere(pointSphere, viewMatrix * projectionMatrix, viewPortMatrix, 0xFF0000FF);
-		DrawSphere(closestPointSphere, viewMatrix * projectionMatrix, viewPortMatrix, 0x000000FF);
+		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawSphere(sphere2, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 
 		///
 		/// ↓描画処理ここから
