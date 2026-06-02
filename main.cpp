@@ -123,10 +123,10 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 }
 
 Vector3 Perpendicular(const Vector3& v1) {
-	if (v1.x != 0.f && v1.y != 0.f) {
-		return  Vector3(-v1.y, v1.x, 0.f); 
+	if (v1.x != 0.f || v1.y != 0.f) {
+		return  Vector3(-v1.y, v1.x, 0.f);
 	}
-	return Vector3(0.f, -v1.z, v1.y); 
+	return Vector3(0.f, -v1.z, v1.y);
 }
 
 void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
