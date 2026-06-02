@@ -123,10 +123,10 @@ void DrawSphere(const Sphere& sphere, const Matrix4x4& viewProjectionMatrix, con
 }
 
 Vector3 Perpendicular(const Vector3& v1) {
-	if (v1.x != 0.f && v1.y != 0.f) {
-		return  Vector3(-v1.y, v1.x, 0.f); 
+	if (v1.x != 0.f || v1.y != 0.f) {
+		return  Vector3(-v1.y, v1.x, 0.f);
 	}
-	return Vector3(0.f, -v1.z, v1.y); 
+	return Vector3(0.f, -v1.z, v1.y);
 }
 
 void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
@@ -241,15 +241,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char preKeys[256] = { 0 };
 	Vector2i mousePos = { 0, 0 };
 	Vector2i preMousePos = { 0, 0 };
-	int mouseWheel = 0;
+	//int mouseWheel = 0;
 
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
 	Vector3 pos1 = { 0, 0, 0 };
 
-	Triangle triangle1{ { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0) } };
-	Segment segment1{ Vector3(-1, 0, 0), Vector3(2, 0, 0) };
+	Sphere sphere1{ pos1, 0.5f };
+	Plane plane1{ Vector3(0, 1, 1), 1 };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -260,47 +260,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		memcpy(preKeys, keys, 256);
 		Novice::GetHitKeyStateAll(keys);
 
-		preMousePos = mousePos;
-		Novice::GetMousePosition(&mousePos.x, &mousePos.y);
-
-		
-		mouseWheel = Novice::GetWheel();
-
 		///
 		/// ↓更新処理ここから
 		///
-		
-		if (Novice::IsPressMouse(1)) {
-			cameraRotate.y += (mousePos.x - preMousePos.x) * 0.01f;
-			cameraRotate.x += (mousePos.y - preMousePos.y) * 0.01f;
-		}
-
-		if (mouseWheel != 0) {
-			Vector3 cameraDirection;
-			cameraDirection.x = cosf(cameraRotate.x) * sinf(cameraRotate.y);
-			cameraDirection.y = sinf(cameraRotate.x);
-			cameraDirection.z = cosf(cameraRotate.x) * cosf(cameraRotate.y);
-			cameraDirection = cameraDirection.Normalized();
-			cameraPos = cameraPos + cameraDirection * float(mouseWheel) * 0.01f;
-		}
-
-
-
 		ImGui::Begin("window");
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("segment1Origin", &segment1.origin.x, 0.1f);
-		ImGui::DragFloat3("segment1Diff", &segment1.diff.x, 0.1f);
-		ImGui::DragFloat3("triangle1Vertex0", &triangle1.vertices[0].x, 0.1f);
-		ImGui::DragFloat3("triangle1Vertex1", &triangle1.vertices[1].x, 0.1f);
-		ImGui::DragFloat3("triangle1Vertex2", &triangle1.vertices[2].x, 0.1f);
+		ImGui::DragFloat3("sphere1Pos", &sphere1.center.x, 0.1f);
+		ImGui::DragFloat("sphere1Radius", &sphere1.radius, 0.1f);
+		ImGui::DragFloat3("plane1Normal", &plane1.normal.x, 0.1f);
+		ImGui::DragFloat("plane1Distance", &plane1.distance, 0.1f);
 		ImGui::End();
+		plane1.normal = plane1.normal.Normalized();
+
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
 		Matrix4x4 viewMatrix = Matrix4x4::Inverse(cameraMatrix);
 		Matrix4x4 projectionMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
 		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
 
-		bool collision = isCollision(triangle1, segment1);
+		bool collision = isCollision(sphere1, plane1);
 
 		///
 		/// ↑更新処理ここまで
@@ -308,12 +286,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		//draw segment
-		Vector3 segmentStart = Transform(segment1.origin, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 segmentEnd = Transform(segment1.origin + segment1.diff, viewMatrix * projectionMatrix * viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(segmentStart.x), static_cast<int>(segmentStart.y), static_cast<int>(segmentEnd.x), static_cast<int>(segmentEnd.y), collision ? 0xFF0000FF : 0xFFFFFFFF);
 
-		DrawTriangle(triangle1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawPlane(plane1, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
+
 	
 
 		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
