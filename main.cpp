@@ -271,6 +271,15 @@ bool isCollision(const AABB& a, const AABB& b) {
 	return false;
 }
 
+bool isCollision(const Sphere& sphere, const AABB& aabb) {
+	Vector3 closestPoint;
+	closestPoint.x = max(aabb.min.x, min(sphere.center.x, aabb.max.x));
+	closestPoint.y = max(aabb.min.y, min(sphere.center.y, aabb.max.y));
+	closestPoint.z = max(aabb.min.z, min(sphere.center.z, aabb.max.z));
+	float distance = Vector3::Length(closestPoint - sphere.center);
+	return distance <= sphere.radius;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -294,9 +303,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		.max{0.0f, 0.0f, 0.0f}
 	};
 
-	AABB aabb2{
-		.min{0.2f,0.2f,0.2f},
-		.max{1.f, 1.f, 1.f}
+	Sphere sphere1{
+		.center{0, 0, 0},
+		.radius{0.5f}
 	};
 
 	// ウィンドウの×ボタンが押されるまでループ
@@ -339,8 +348,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::DragFloat3("aabb1 min", &aabb1.min.x, 0.1f);
 		ImGui::DragFloat3("aabb1 max", &aabb1.max.x, 0.1f);
-		ImGui::DragFloat3("aabb2 min", &aabb2.min.x, 0.1f);
-		ImGui::DragFloat3("aabb2 max", &aabb2.max.x, 0.1f);
+
+		ImGui::DragFloat3("sphere1 center", &sphere1.center.x, 0.1f);
+		ImGui::DragFloat("sphere1 radius", &sphere1.radius, 0.1f, 0.0f, 100.0f);
 		ImGui::End();
 
 		float temp;
@@ -356,17 +366,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		aabb1.max.z = max(aabb1.min.z, aabb1.max.z);
 		aabb1.min.z = temp;
 
-		temp = min(aabb2.min.x, aabb2.max.x);
-		aabb2.max.x = max(aabb2.min.x, aabb2.max.x);
-		aabb2.min.x = temp;
-
-		temp = min(aabb2.min.y, aabb2.max.y);
-		aabb2.max.y = max(aabb2.min.y, aabb2.max.y);
-		aabb2.min.y = temp;
-
-		temp = min(aabb2.min.z, aabb2.max.z);
-		aabb2.max.z = max(aabb2.min.z, aabb2.max.z);
-		aabb2.min.z = temp;
+		
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -384,7 +384,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
 
 
-		bool collision = isCollision(aabb1, aabb2);
+		bool collision = isCollision(sphere1, aabb1);
 
 		///
 		/// ↑更新処理ここまで
@@ -393,7 +393,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
 		DrawAABB(aabb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-		DrawAABB(aabb2, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 
 
 
