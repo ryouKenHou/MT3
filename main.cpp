@@ -48,6 +48,11 @@ struct Triangle {
 	Vector3 vertices[3];
 };
 
+struct AABB {
+	Vector3 min;
+	Vector3 max;
+};
+
 // ==============================================================================
 // 関数宣言
 // =============================================================================
@@ -77,14 +82,14 @@ void DrawGrid(const Matrix4x4& viewPortMatrix, const Matrix4x4& viewProjectionMa
 		float x = -kGridHalfSize + xIndex * kGridEvery;
 		Vector3 start = Transform(Vector3(x, 0, -kGridHalfSize), viewProjectionMatrix * viewPortMatrix);
 		Vector3 end = Transform(Vector3(x, 0, kGridHalfSize), viewProjectionMatrix * viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(start.x), static_cast<int>(start.y), static_cast<int>(end.x), static_cast<int>(end.y), xIndex == centerIndex ? 0x000000FF : 0xFFFFFFAA);
+		Novice::DrawLine(static_cast<int>(start.x), static_cast<int>(start.y), static_cast<int>(end.x), static_cast<int>(end.y), xIndex == centerIndex ? 0x00000055 : 0xFFFFFF55);
 	}
 
 	for (uint32_t zIndex = 0; zIndex <= kSubdivision; ++zIndex) {
 		float z = -kGridHalfSize + zIndex * kGridEvery;
 		Vector3 start = Transform(Vector3(-kGridHalfSize, 0, z), viewProjectionMatrix * viewPortMatrix);
 		Vector3 end = Transform(Vector3(kGridHalfSize, 0, z), viewProjectionMatrix * viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(start.x), static_cast<int>(start.y), static_cast<int>(end.x), static_cast<int>(end.y), zIndex == centerIndex ? 0x000000FF : 0xFFFFFFAA);
+		Novice::DrawLine(static_cast<int>(start.x), static_cast<int>(start.y), static_cast<int>(end.x), static_cast<int>(end.y), zIndex == centerIndex ? 0x00000055 : 0xFFFFFF55);
 	}
 }
 
@@ -173,6 +178,33 @@ void DrawTriangle(const Triangle& triangle, const Matrix4x4& viewProjectionMatri
 	);
 }
 
+void DrawAABB(const AABB& aabb, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	Vector3 vertices[8] = {
+		{aabb.min.x, aabb.min.y, aabb.min.z},
+		{aabb.max.x, aabb.min.y, aabb.min.z},
+		{aabb.max.x, aabb.max.y, aabb.min.z},
+		{aabb.min.x, aabb.max.y, aabb.min.z},
+		{aabb.min.x, aabb.min.y, aabb.max.z},
+		{aabb.max.x, aabb.min.y, aabb.max.z},
+		{aabb.max.x, aabb.max.y, aabb.max.z},
+		{aabb.min.x, aabb.max.y, aabb.max.z}
+	};
+	Vector3 screenVertices[8];
+	for (int i = 0; i < 8; ++i) {
+		screenVertices[i] = Transform(vertices[i], viewProjectionMatrix * viewportMatrix);
+	}
+	int indices[12][2] = {
+		{0, 1}, {1, 2}, {2, 3}, {3, 0},
+		{4, 5}, {5, 6}, {6, 7}, {7, 4},
+		{0, 4}, {1, 5}, {2, 6}, {3, 7}
+	};
+	for (int i = 0; i < 12; ++i) {
+		Vector3 start = screenVertices[indices[i][0]];
+		Vector3 end = screenVertices[indices[i][1]];
+		Novice::DrawLine(static_cast<int>(start.x), static_cast<int>(start.y), static_cast<int>(end.x), static_cast<int>(end.y), color);
+	}
+}
+
 Vector3 Project(const Vector3& v1, const Vector3& v2) {
 	Vector3 normalizedV2 = v2.Normalized();
 	float dotProduct = v1.Dot(normalizedV2);
@@ -230,6 +262,15 @@ bool isCollision(const Triangle& triangle, const Segment& segment) {
 		Vector3::Cross(triangle.vertices[0] - triangle.vertices[2], c2).Dot(planeNormal) >= 0.f;
 }
 
+bool isCollision(const AABB& a, const AABB& b) {
+	if((a.min.x <= b.max.x && a.max.x >= b.min.x) &&
+		(a.min.y <= b.max.y && a.max.y >= b.min.y) &&
+		(a.min.z <= b.max.z && a.max.z >= b.min.z)) {
+		return true;
+	}
+	return false;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -248,8 +289,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	Vector3 pos1 = { 0, 0, 0 };
 
-	Triangle triangle1{ { Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0) } };
-	Segment segment1{ Vector3(-1, 0, 0), Vector3(2, 0, 0) };
+	AABB aabb1{
+		.min{-0.5f, -0.5f, -0.5f},
+		.max{0.0f, 0.0f, 0.0f}
+	};
+
+	AABB aabb2{
+		.min{0.2f,0.2f,0.2f},
+		.max{1.f, 1.f, 1.f}
+	};
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -289,18 +337,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::Begin("window");
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("segment1Origin", &segment1.origin.x, 0.1f);
-		ImGui::DragFloat3("segment1Diff", &segment1.diff.x, 0.1f);
-		ImGui::DragFloat3("triangle1Vertex0", &triangle1.vertices[0].x, 0.1f);
-		ImGui::DragFloat3("triangle1Vertex1", &triangle1.vertices[1].x, 0.1f);
-		ImGui::DragFloat3("triangle1Vertex2", &triangle1.vertices[2].x, 0.1f);
+		ImGui::DragFloat3("aabb1 min", &aabb1.min.x, 0.1f);
+		ImGui::DragFloat3("aabb1 max", &aabb1.max.x, 0.1f);
+		ImGui::DragFloat3("aabb2 min", &aabb2.min.x, 0.1f);
+		ImGui::DragFloat3("aabb2 max", &aabb2.max.x, 0.1f);
 		ImGui::End();
+
+		float temp;
+		temp = min(aabb1.min.x, aabb1.max.x);
+		aabb1.max.x = max(aabb1.min.x, aabb1.max.x);
+		aabb1.min.x = temp;
+
+		temp = min(aabb1.min.y, aabb1.max.y);
+		aabb1.max.y = max(aabb1.min.y, aabb1.max.y);
+		aabb1.min.y = temp;
+
+		temp = min(aabb1.min.z, aabb1.max.z);
+		aabb1.max.z = max(aabb1.min.z, aabb1.max.z);
+		aabb1.min.z = temp;
+
+		temp = min(aabb2.min.x, aabb2.max.x);
+		aabb2.max.x = max(aabb2.min.x, aabb2.max.x);
+		aabb2.min.x = temp;
+
+		temp = min(aabb2.min.y, aabb2.max.y);
+		aabb2.max.y = max(aabb2.min.y, aabb2.max.y);
+		aabb2.min.y = temp;
+
+		temp = min(aabb2.min.z, aabb2.max.z);
+		aabb2.max.z = max(aabb2.min.z, aabb2.max.z);
+		aabb2.min.z = temp;
+
+
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
 		Matrix4x4 viewMatrix = Matrix4x4::Inverse(cameraMatrix);
-		Matrix4x4 projectionMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
+		Matrix4x4 projectionMatrix = Matrix4x4::MakePerspectiveFovMatrix(0.45f, 640.0f / 360.0f, 0.1f, 100.0f);
 		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
 
-		bool collision = isCollision(triangle1, segment1);
+		// Add this temporary debug code after line 300 (after creating matrices)
+		Vector3 testPoint(0, 0, 0); // Origin
+		Vector3 transformed = Transform(testPoint, viewMatrix * projectionMatrix * viewPortMatrix);
+		Novice::ScreenPrintf(0, 20, "Origin (0,0,0) transforms to: %.1f, %.1f", transformed.x, transformed.y);
+
+		Vector3 testPoint2(1, 0, 0); // X-axis
+		Vector3 transformed2 = Transform(testPoint2, viewMatrix * projectionMatrix * viewPortMatrix);
+		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
+
+
+		bool collision = isCollision(aabb1, aabb2);
 
 		///
 		/// ↑更新処理ここまで
@@ -308,13 +392,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		//draw segment
-		Vector3 segmentStart = Transform(segment1.origin, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 segmentEnd = Transform(segment1.origin + segment1.diff, viewMatrix * projectionMatrix * viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(segmentStart.x), static_cast<int>(segmentStart.y), static_cast<int>(segmentEnd.x), static_cast<int>(segmentEnd.y), collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawAABB(aabb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawAABB(aabb2, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 
-		DrawTriangle(triangle1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-	
+
 
 		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 		
