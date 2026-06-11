@@ -280,6 +280,44 @@ bool isCollision(const Sphere& sphere, const AABB& aabb) {
 	return distance <= sphere.radius;
 }
 
+bool isCollision(const Segment& segment, const AABB& aabb) {
+	float tmin = 0.0f;  // Start of segment
+	float tmax = 1.0f;  // End of segment
+
+	// Check each axis
+	for (int i = 0; i < 3; ++i) {
+		float origin_i = (i == 0) ? segment.origin.x : (i == 1) ? segment.origin.y : segment.origin.z;
+		float diff_i = (i == 0) ? segment.diff.x : (i == 1) ? segment.diff.y : segment.diff.z;
+		float min_i = (i == 0) ? aabb.min.x : (i == 1) ? aabb.min.y : aabb.min.z;
+		float max_i = (i == 0) ? aabb.max.x : (i == 1) ? aabb.max.y : aabb.max.z;
+
+		if (fabs(diff_i) < 1e-6f) {
+			// Segment is parallel to this axis
+			// Check if origin is outside the box on this axis
+			if (origin_i < min_i || origin_i > max_i) {
+				return false;
+			}
+		}
+		else {
+			// Calculate intersection t values for this axis
+			float t1 = (min_i - origin_i) / diff_i;
+			float t2 = (max_i - origin_i) / diff_i;
+
+			float tNear = min(t1, t2);
+			float tFar = max(t1, t2);
+
+			tmin = max(tmin, tNear);
+			tmax = min(tmax, tFar);
+
+			if (tmin > tmax) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -300,12 +338,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	AABB aabb1{
 		.min{-0.5f, -0.5f, -0.5f},
-		.max{0.0f, 0.0f, 0.0f}
+		.max{0.5f, 0.5f, 0.5f}
 	};
 
-	Sphere sphere1{
-		.center{0, 0, 0},
-		.radius{0.5f}
+	Segment segment1{
+		.origin{-0.7f, 0.3f, 0.f},
+		.diff{2.f, -0.5f, 0.f}
 	};
 
 
@@ -327,8 +365,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("aabb1 min", &aabb1.min.x, 0.1f);
 		ImGui::DragFloat3("aabb1 max", &aabb1.max.x, 0.1f);
 
-		ImGui::DragFloat3("sphere1 center", &sphere1.center.x, 0.1f);
-		ImGui::DragFloat("sphere1 radius", &sphere1.radius, 0.1f, 0.0f, 100.0f);
+		ImGui::DragFloat3("segment1 origin", &segment1.origin.x, 0.1f);
+		ImGui::DragFloat3("segment1 diff", &segment1.diff.x, 0.1f);
 		ImGui::End();
 
 		float temp;
@@ -362,7 +400,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
 
 
-		bool collision = isCollision(sphere1, aabb1);
+		bool collision = isCollision(segment1, aabb1);
 
 		///
 		/// ↑更新処理ここまで
@@ -371,7 +409,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
 		DrawAABB(aabb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+
+		Vector3 segmentStart = Transform(segment1.origin, viewMatrix * projectionMatrix * viewPortMatrix);
+		Vector3 segmentEnd = Transform(segment1.origin + segment1.diff, viewMatrix * projectionMatrix * viewPortMatrix);
+		Novice::DrawLine(static_cast<int>(segmentStart.x), static_cast<int>(segmentStart.y), static_cast<int>(segmentEnd.x), static_cast<int>(segmentEnd.y), collision ? 0xFF0000FF : 0xFFFFFFFF);
+
 
 
 
