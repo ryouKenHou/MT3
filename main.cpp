@@ -354,6 +354,66 @@ bool isCollision(const Segment& segment, const AABB& aabb) {
 	return true;
 }
 
+bool isCollision(const Line& line, const AABB& aabb) {
+	float tmin = -FLT_MAX;  // Start of line
+	float tmax = FLT_MAX;   // End of line
+
+	for (int i = 0; i < 3; ++i) {
+		float origin_i = (i == 0) ? line.origin.x : (i == 1) ? line.origin.y : line.origin.z;
+		float diff_i = (i == 0) ? line.diff.x : (i == 1) ? line.diff.y : line.diff.z;
+		float min_i = (i == 0) ? aabb.min.x : (i == 1) ? aabb.min.y : aabb.min.z;
+		float max_i = (i == 0) ? aabb.max.x : (i == 1) ? aabb.max.y : aabb.max.z;
+
+		if (fabs(diff_i) < 1e-6f) {
+			// Line is parallel to this axis
+			if (origin_i < min_i || origin_i > max_i) {
+				return false;
+			}
+		}
+		else {
+			float t1 = (min_i - origin_i) / diff_i;
+			float t2 = (max_i - origin_i) / diff_i;
+			float tNear = min(t1, t2);
+			float tFar = max(t1, t2);
+			tmin = max(tmin, tNear);
+			tmax = min(tmax, tFar);
+			if (tmin > tmax) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+bool isCollision(const Ray& ray, const AABB& aabb) {
+	float tmin = 0.0f;  // Start of ray
+	float tmax = FLT_MAX;   // End of ray
+	for (int i = 0; i < 3; ++i) {
+		float origin_i = (i == 0) ? ray.origin.x : (i == 1) ? ray.origin.y : ray.origin.z;
+		float diff_i = (i == 0) ? ray.diff.x : (i == 1) ? ray.diff.y : ray.diff.z;
+		float min_i = (i == 0) ? aabb.min.x : (i == 1) ? aabb.min.y : aabb.min.z;
+		float max_i = (i == 0) ? aabb.max.x : (i == 1) ? aabb.max.y : aabb.max.z;
+		if (fabs(diff_i) < 1e-6f) {
+			// Ray is parallel to this axis
+			if (origin_i < min_i || origin_i > max_i) {
+				return false;
+			}
+		}
+		else {
+			float t1 = (min_i - origin_i) / diff_i;
+			float t2 = (max_i - origin_i) / diff_i;
+			float tNear = min(t1, t2);
+			float tFar = max(t1, t2);
+			tmin = max(tmin, tNear);
+			tmax = min(tmax, tFar);
+			if (tmin > tmax) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 bool isCollision(const Sphere& sphere, const OBB& obb) {
 	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
 	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
@@ -365,6 +425,42 @@ bool isCollision(const Sphere& sphere, const OBB& obb) {
 
 	return isCollision(sphereInOBBLocal, aabbOBBLocal);
 }
+
+bool isCollision(const Line& line, const OBB& obb) {
+	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
+	Vector3 localOrigin = Transform(line.origin, obbInverseMatrix);
+	Vector3 localEnd = Transform(line.origin + line.diff, obbInverseMatrix);
+
+	AABB aabbOBBLocal{ .min = obb.size * -1, .max = obb.size };
+
+	Line lineInOBBLocal{ .origin = localOrigin, .diff = localEnd - localOrigin };
+	return isCollision(lineInOBBLocal, aabbOBBLocal);
+}
+
+bool isCollision(const Ray& ray, const OBB& obb) {
+	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
+	Vector3 rayOriginInOBBLocalSpace = Transform(ray.origin, obbInverseMatrix);
+	Vector3 rayDiffInOBBLocalSpace = Transform(ray.origin + ray.diff, obbInverseMatrix) - rayOriginInOBBLocalSpace;
+	Ray rayInOBBLocal{ .origin = rayOriginInOBBLocalSpace, .diff = rayDiffInOBBLocalSpace };
+	AABB aabbOBBLocal{ .min = obb.size * -1, .max = obb.size };
+	return isCollision(rayInOBBLocal, aabbOBBLocal);
+}
+
+bool isCollision(const Segment& segment, const OBB& obb) {
+	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
+
+	Vector3 segmentOriginInOBBLocalSpace = Transform(segment.origin, obbInverseMatrix);
+	Vector3 segmentDiffInOBBLocalSpace = Transform(segment.origin + segment.diff, obbInverseMatrix) - segmentOriginInOBBLocalSpace;
+
+	Segment segmentInOBBLocal{ .origin = segmentOriginInOBBLocalSpace, .diff = segmentDiffInOBBLocalSpace };
+	AABB aabbOBBLocal{ .min = obb.size * -1, .max = obb.size };
+	return isCollision(segmentInOBBLocal, aabbOBBLocal);
+}
+
+
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -393,9 +489,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		.size = { 0.5f, 0.5f, 0.5f }
 	};
 
-	Sphere sphere1{
-		.center = { 0.f, 0.f, 0.f },
-		.radius = 0.5f
+	Segment segment{
+		.origin = { 0.f, 0.f, 0.f },
+		.diff = { 1.f, 1.f, 1.f }
 	};
 
 
@@ -415,10 +511,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 
-		ImGui::DragFloat3("sphere1.center", &sphere1.center.x, 0.01f);
-		ImGui::DragFloat("sphere1.radius", &sphere1.radius, 0.01f);
+		ImGui::DragFloat3("segment.origin", &segment.origin.x, 0.01f);
+		ImGui::DragFloat3("segment.diff", &segment.diff.x, 0.01f);
 
 		ImGui::DragFloat3("obb.center", &obb.center.x, 0.01f);
+		ImGui::DragFloat3("obb.size", &obb.size.x, 0.01f);
 		ImGui::DragFloat3("rotation", &rotate.x, 0.01f);
 
 		ImGui::End();
@@ -451,7 +548,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
 
 
-		bool collision = isCollision(sphere1, obb);
+		bool collision = isCollision(segment, obb);
 
 		///
 		/// ↑更新処理ここまで
@@ -460,7 +557,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
 		DrawOBB(obb, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		
+		Vector3 segmentEnd = segment.origin + segment.diff;
+		Vector3 screenStart = Transform(segment.origin, viewMatrix * projectionMatrix * viewPortMatrix);
+		Vector3 screenEnd = Transform(segmentEnd, viewMatrix * projectionMatrix * viewPortMatrix);
+		Novice::DrawLine(static_cast<int>(screenStart.x), static_cast<int>(screenStart.y), static_cast<int>(screenEnd.x), static_cast<int>(screenEnd.y), collision ? 0xFF0000FF : 0xFFFFFFFF);
 
 		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 		
