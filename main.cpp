@@ -53,6 +53,13 @@ struct AABB {
 	Vector3 max;
 };
 
+struct OBB {
+	Vector3 center;
+	Vector3 orientation[3];
+	Vector3 size;
+
+};
+
 // ==============================================================================
 // 関数宣言
 // =============================================================================
@@ -205,6 +212,35 @@ void DrawAABB(const AABB& aabb, const Matrix4x4& viewProjectionMatrix, const Mat
 	}
 }
 
+void DrawOBB(const OBB& obb, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	Vector3 vertices[8];
+	for (int i = 0; i < 8; ++i) {
+		Vector3 localVertex = {
+			(i & 1 ? 1 : -1) * obb.size.x ,
+			(i & 2 ? 1 : -1) * obb.size.y ,
+			(i & 4 ? 1 : -1) * obb.size.z 
+		};
+		vertices[i] = obb.center +
+			obb.orientation[0] * localVertex.x +
+			obb.orientation[1] * localVertex.y +
+			obb.orientation[2] * localVertex.z;
+	}
+	Vector3 screenVertices[8];
+	for (int i = 0; i < 8; ++i) {
+		screenVertices[i] = Transform(vertices[i], viewProjectionMatrix * viewportMatrix);
+	}
+	int indices[12][2] = {
+		{0, 1}, {5, 7}, {2, 0}, {3, 2},
+		{4, 5}, {3, 1}, {6, 7}, {6, 4},
+		{0, 4}, {1, 5}, {2, 6}, {3, 7}
+	};
+	for (int i = 0; i < 12; ++i) {
+		Vector3 start = screenVertices[indices[i][0]];
+		Vector3 end = screenVertices[indices[i][1]];
+		Novice::DrawLine(static_cast<int>(start.x), static_cast<int>(start.y), static_cast<int>(end.x), static_cast<int>(end.y), color);
+	}
+}
+
 Vector3 Project(const Vector3& v1, const Vector3& v2) {
 	Vector3 normalizedV2 = v2.Normalized();
 	float dotProduct = v1.Dot(normalizedV2);
@@ -318,6 +354,18 @@ bool isCollision(const Segment& segment, const AABB& aabb) {
 	return true;
 }
 
+bool isCollision(const Sphere& sphere, const OBB& obb) {
+	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
+
+	Vector3 centerInOBBLocalSpace = Transform(sphere.center, obbInverseMatrix);
+
+	AABB aabbOBBLocal{.min = obb.size * -1, .max = obb.size};
+	Sphere sphereInOBBLocal{ .center = centerInOBBLocalSpace, .radius = sphere.radius };
+
+	return isCollision(sphereInOBBLocal, aabbOBBLocal);
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -336,14 +384,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	Vector3 pos1 = { 0, 0, 0 };
 
-	AABB aabb1{
-		.min{-0.5f, -0.5f, -0.5f},
-		.max{0.5f, 0.5f, 0.5f}
+	Vector3 rotate{ 0.f,0.f,0.f };
+	OBB obb{
+		.center = { -1.f, 0.f, 0.f },
+		.orientation = {Vector3(1.f, 0.f, 0.f),
+						Vector3(0.f, 1.f, 0.f),
+						Vector3(0.f, 0.f, 1.f)},
+		.size = { 0.5f, 0.5f, 0.5f }
 	};
 
-	Segment segment1{
-		.origin{-0.7f, 0.3f, 0.f},
-		.diff{2.f, -0.5f, 0.f}
+	Sphere sphere1{
+		.center = { 0.f, 0.f, 0.f },
+		.radius = 0.5f
 	};
 
 	// ウィンドウの×ボタンが押されるまでループ
@@ -384,27 +436,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::Begin("window");
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
-		ImGui::DragFloat3("aabb1 min", &aabb1.min.x, 0.1f);
-		ImGui::DragFloat3("aabb1 max", &aabb1.max.x, 0.1f);
 
-		ImGui::DragFloat3("segment1 origin", &segment1.origin.x, 0.1f);
-		ImGui::DragFloat3("segment1 diff", &segment1.diff.x, 0.1f);
+		ImGui::DragFloat3("sphere1.center", &sphere1.center.x, 0.01f);
+		ImGui::DragFloat("sphere1.radius", &sphere1.radius, 0.01f);
+
+		ImGui::DragFloat3("obb.center", &obb.center.x, 0.01f);
+		ImGui::DragFloat3("rotation", &rotate.x, 0.01f);
+
 		ImGui::End();
+		Matrix4x4 rotationMatrix = Matrix4x4::MakeRotationXMatrix(rotate.x) * Matrix4x4::MakeRotationYMatrix(rotate.y) * Matrix4x4::MakeRotationZMatrix(rotate.z);
+		obb.orientation[0].x = rotationMatrix.m[0][0];
+		obb.orientation[0].y = rotationMatrix.m[0][1];
+		obb.orientation[0].z = rotationMatrix.m[0][2];
 
-		float temp;
-		temp = min(aabb1.min.x, aabb1.max.x);
-		aabb1.max.x = max(aabb1.min.x, aabb1.max.x);
-		aabb1.min.x = temp;
+		obb.orientation[1].x = rotationMatrix.m[1][0];
+		obb.orientation[1].y = rotationMatrix.m[1][1];
+		obb.orientation[1].z = rotationMatrix.m[1][2];
 
-		temp = min(aabb1.min.y, aabb1.max.y);
-		aabb1.max.y = max(aabb1.min.y, aabb1.max.y);
-		aabb1.min.y = temp;
-
-		temp = min(aabb1.min.z, aabb1.max.z);
-		aabb1.max.z = max(aabb1.min.z, aabb1.max.z);
-		aabb1.min.z = temp;
-
-		
+		obb.orientation[2].x = rotationMatrix.m[2][0];
+		obb.orientation[2].y = rotationMatrix.m[2][1];
+		obb.orientation[2].z = rotationMatrix.m[2][2];
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -422,7 +473,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
 
 
-		bool collision = isCollision(segment1, aabb1);
+		bool collision = isCollision(sphere1, obb);
 
 		///
 		/// ↑更新処理ここまで
@@ -430,14 +481,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawAABB(aabb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-
-		Vector3 segmentStart = Transform(segment1.origin, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 segmentEnd = Transform(segment1.origin + segment1.diff, viewMatrix * projectionMatrix * viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(segmentStart.x), static_cast<int>(segmentStart.y), static_cast<int>(segmentEnd.x), static_cast<int>(segmentEnd.y), collision ? 0xFF0000FF : 0xFFFFFFFF);
-
-
-
+		DrawOBB(obb, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 
 		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 		
