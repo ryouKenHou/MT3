@@ -570,7 +570,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char preKeys[256] = { 0 };
 	Vector2i mousePos = { 0, 0 };
 	Vector2i preMousePos = { 0, 0 };
-	int mouseWheel = 0;
+	//int mouseWheel = 0;
 
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
@@ -609,32 +609,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		memcpy(preKeys, keys, 256);
 		Novice::GetHitKeyStateAll(keys);
 
-		preMousePos = mousePos;
-		Novice::GetMousePosition(&mousePos.x, &mousePos.y);
-
-		
-		mouseWheel = Novice::GetWheel();
-
 		///
 		/// ↓更新処理ここから
 		///
-		
-		if (Novice::IsPressMouse(1)) {
-			cameraRotate.y += (mousePos.x - preMousePos.x) * 0.01f;
-			cameraRotate.x += (mousePos.y - preMousePos.y) * 0.01f;
-		}
-
-		if (mouseWheel != 0) {
-			Vector3 cameraDirection;
-			cameraDirection.x = cosf(cameraRotate.x) * sinf(cameraRotate.y);
-			cameraDirection.y = sinf(cameraRotate.x);
-			cameraDirection.z = cosf(cameraRotate.x) * cosf(cameraRotate.y);
-			cameraDirection = cameraDirection.Normalized();
-			cameraPos = cameraPos + cameraDirection * float(mouseWheel) * 0.01f;
-		}
-
-
-
 		ImGui::Begin("window");
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
