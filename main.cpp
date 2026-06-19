@@ -600,6 +600,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		.radius = 1.f
 	};
 
+	Segment segment1{
+		.origin = { 0.f, 0.f, 0.f },
+		.diff = { 1.f, 1.f, 1.f }
+	};
+
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -645,12 +650,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("obb.size", &obb1.size.x, 0.01f);
 		ImGui::DragFloat3("rotation", &rotate1.x, 0.01f);
 
+		ImGui::DragFloat3("segment.origin", &segment1.origin.x, 0.01f);
+		ImGui::DragFloat3("segment.diff", &segment1.diff.x, 0.01f);
+
 		/*ImGui::DragFloat3("obb2.center", &obb2.center.x, 0.01f);
 		ImGui::DragFloat3("obb2.size", &obb2.size.x, 0.01f);
 		ImGui::DragFloat3("rotation2", &rotate2.x, 0.01f);*/
 
-		ImGui::DragFloat3("sphere.center", &sphere1.center.x, 0.01f);
-		ImGui::DragFloat("sphere.radius", &sphere1.radius, 0.01f);
+		/*ImGui::DragFloat3("sphere.center", &sphere1.center.x, 0.01f);
+		ImGui::DragFloat("sphere.radius", &sphere1.radius, 0.01f);*/
 
 		ImGui::End();
 		Matrix4x4 rotationMatrix = Matrix4x4::MakeRotationXMatrix(rotate1.x) * Matrix4x4::MakeRotationYMatrix(rotate1.y) * Matrix4x4::MakeRotationZMatrix(rotate1.z);
@@ -695,7 +703,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
 
 
-		bool collision = isCollision(sphere1, obb1);
+		bool collision = isCollision(segment1, obb1);
 
 		///
 		/// ↑更新処理ここまで
@@ -705,7 +713,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawOBB(obb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 		//DrawOBB(obb2, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
-		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix,  0xFFFFFFFF);
+		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix,  0xFFFFFFFF);
+
+		//draw segment
+		Vector3 segmentStartScreen = Transform(segment1.origin, viewMatrix * projectionMatrix * viewPortMatrix);
+		Vector3 segmentEndScreen = Transform(segment1.origin + segment1.diff, viewMatrix * projectionMatrix * viewPortMatrix);
+		Novice::DrawLine(static_cast<int>(segmentStartScreen.x), static_cast<int>(segmentStartScreen.y),
+			static_cast<int>(segmentEndScreen.x), static_cast<int>(segmentEndScreen.y),
+			0xFFFFFFFF);
 
 		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 		
