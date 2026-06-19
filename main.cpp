@@ -415,7 +415,13 @@ bool isCollision(const Ray& ray, const AABB& aabb) {
 }
 
 bool isCollision(const Sphere& sphere, const OBB& obb) {
-	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbRotationMatrix(
+		obb.orientation[0].x, obb.orientation[0].y, obb.orientation[0].z, 0,
+		obb.orientation[1].x, obb.orientation[1].y, obb.orientation[1].z, 0,
+		obb.orientation[2].x, obb.orientation[2].y, obb.orientation[2].z, 0,
+		0, 0, 0, 1
+	);
+	Matrix4x4 obbWorldMatrix = obbRotationMatrix* Matrix4x4::MakeTranslateMatrix(obb.center) ;
 	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
 
 	Vector3 centerInOBBLocalSpace = Transform(sphere.center, obbInverseMatrix);
@@ -427,7 +433,14 @@ bool isCollision(const Sphere& sphere, const OBB& obb) {
 }
 
 bool isCollision(const Line& line, const OBB& obb) {
-	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbRotationMatrix(
+		obb.orientation[0].x, obb.orientation[0].y, obb.orientation[0].z, 0,
+		obb.orientation[1].x, obb.orientation[1].y, obb.orientation[1].z, 0,
+		obb.orientation[2].x, obb.orientation[2].y, obb.orientation[2].z, 0,
+		0, 0, 0, 1
+	);
+	Matrix4x4 obbWorldMatrix = obbRotationMatrix * Matrix4x4::MakeTranslateMatrix(obb.center);
+
 	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
 	Vector3 localOrigin = Transform(line.origin, obbInverseMatrix);
 	Vector3 localEnd = Transform(line.origin + line.diff, obbInverseMatrix);
@@ -439,7 +452,14 @@ bool isCollision(const Line& line, const OBB& obb) {
 }
 
 bool isCollision(const Ray& ray, const OBB& obb) {
-	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbRotationMatrix(
+		obb.orientation[0].x, obb.orientation[0].y, obb.orientation[0].z, 0,
+		obb.orientation[1].x, obb.orientation[1].y, obb.orientation[1].z, 0,
+		obb.orientation[2].x, obb.orientation[2].y, obb.orientation[2].z, 0,
+		0, 0, 0, 1
+	);
+	Matrix4x4 obbWorldMatrix = obbRotationMatrix * Matrix4x4::MakeTranslateMatrix(obb.center);
+
 	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
 	Vector3 rayOriginInOBBLocalSpace = Transform(ray.origin, obbInverseMatrix);
 	Vector3 rayDiffInOBBLocalSpace = Transform(ray.origin + ray.diff, obbInverseMatrix) - rayOriginInOBBLocalSpace;
@@ -449,7 +469,14 @@ bool isCollision(const Ray& ray, const OBB& obb) {
 }
 
 bool isCollision(const Segment& segment, const OBB& obb) {
-	Matrix4x4 obbWorldMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), Vector3(0, 0, 0), obb.center);
+	Matrix4x4 obbRotationMatrix(
+		obb.orientation[0].x, obb.orientation[0].y, obb.orientation[0].z, 0,
+		obb.orientation[1].x, obb.orientation[1].y, obb.orientation[1].z, 0,
+		obb.orientation[2].x, obb.orientation[2].y, obb.orientation[2].z, 0,
+		0, 0, 0, 1
+	);
+	Matrix4x4 obbWorldMatrix = obbRotationMatrix * Matrix4x4::MakeTranslateMatrix(obb.center);
+
 	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
 
 	Vector3 segmentOriginInOBBLocalSpace = Transform(segment.origin, obbInverseMatrix);
@@ -568,6 +595,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		.size = { 0.5f, 0.5f, 0.5f }
 	};
 
+	Sphere sphere1{
+		.center = { 0.f, 0.f, 0.f },
+		.radius = 1.f
+	};
+
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 		// フレームの開始
@@ -613,9 +645,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("obb.size", &obb1.size.x, 0.01f);
 		ImGui::DragFloat3("rotation", &rotate1.x, 0.01f);
 
-		ImGui::DragFloat3("obb2.center", &obb2.center.x, 0.01f);
+		/*ImGui::DragFloat3("obb2.center", &obb2.center.x, 0.01f);
 		ImGui::DragFloat3("obb2.size", &obb2.size.x, 0.01f);
-		ImGui::DragFloat3("rotation2", &rotate2.x, 0.01f);
+		ImGui::DragFloat3("rotation2", &rotate2.x, 0.01f);*/
+
+		ImGui::DragFloat3("sphere.center", &sphere1.center.x, 0.01f);
+		ImGui::DragFloat("sphere.radius", &sphere1.radius, 0.01f);
 
 		ImGui::End();
 		Matrix4x4 rotationMatrix = Matrix4x4::MakeRotationXMatrix(rotate1.x) * Matrix4x4::MakeRotationYMatrix(rotate1.y) * Matrix4x4::MakeRotationZMatrix(rotate1.z);
@@ -635,9 +670,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		obb2.orientation[0].x = rotationMatrix2.m[0][0];
 		obb2.orientation[0].y = rotationMatrix2.m[0][1];
 		obb2.orientation[0].z = rotationMatrix2.m[0][2];
+
 		obb2.orientation[1].x = rotationMatrix2.m[1][0];
 		obb2.orientation[1].y = rotationMatrix2.m[1][1];
 		obb2.orientation[1].z = rotationMatrix2.m[1][2];
+
 		obb2.orientation[2].x = rotationMatrix2.m[2][0];
 		obb2.orientation[2].y = rotationMatrix2.m[2][1];
 		obb2.orientation[2].z = rotationMatrix2.m[2][2];
@@ -658,7 +695,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
 
 
-		bool collision = isCollision(obb1, obb2);
+		bool collision = isCollision(sphere1, obb1);
 
 		///
 		/// ↑更新処理ここまで
@@ -667,7 +704,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
 		DrawOBB(obb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-		DrawOBB(obb2, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
+		//DrawOBB(obb2, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
+		DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix,  0xFFFFFFFF);
 
 		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
 		
