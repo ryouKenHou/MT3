@@ -598,7 +598,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	char preKeys[256] = { 0 };
 	Vector2i mousePos = { 0, 0 };
 	Vector2i preMousePos = { 0, 0 };
-	int mouseWheel = 0;
+	//int mouseWheel = 0;
 
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
@@ -658,6 +658,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 
 
+		///
+		/// ↓更新処理ここから
+		///
 		ImGui::Begin("window");
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
