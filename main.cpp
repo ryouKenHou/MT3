@@ -39,7 +39,7 @@ struct Segment {
 	Vector3 diff;
 };
 
-struct Plane{
+struct Plane {
 	Vector3 normal;
 	float distance;
 };
@@ -144,9 +144,9 @@ Vector3 Perpendicular(const Vector3& v1) {
 void DrawBezier(const Vector3& controlPoint0, const Vector3& controlPoint1, const Vector3& controlPoint2, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
 	const int step = 20;
 	const float stepf = static_cast<float>(step);
-	
+
 	Matrix4x4 wvpVpMatrix = viewProjectionMatrix * viewportMatrix;
-	
+
 	Vector3 screenP0 = Transform(controlPoint0, wvpVpMatrix);
 	Vector3 screenP1 = Transform(controlPoint1, wvpVpMatrix);
 	Vector3 screenP2 = Transform(controlPoint2, wvpVpMatrix);
@@ -173,7 +173,7 @@ void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const 
 	Vector3 center = plane.normal * plane.distance;
 	Vector3 perpendicular[4];
 	perpendicular[0] = Perpendicular(plane.normal).Normalized();
-	perpendicular[1] = {-perpendicular[0].x, -perpendicular[0].y, -perpendicular[0].z};
+	perpendicular[1] = { -perpendicular[0].x, -perpendicular[0].y, -perpendicular[0].z };
 	perpendicular[2] = Vector3::Cross(plane.normal, perpendicular[0]);
 	perpendicular[3] = { -perpendicular[2].x, -perpendicular[2].y, -perpendicular[2].z };
 	Vector3 vertices[4];
@@ -246,7 +246,7 @@ void DrawOBB(const OBB& obb, const Matrix4x4& viewProjectionMatrix, const Matrix
 		Vector3 localVertex = {
 			(i & 1 ? 1 : -1) * obb.size.x ,
 			(i & 2 ? 1 : -1) * obb.size.y ,
-			(i & 4 ? 1 : -1) * obb.size.z 
+			(i & 4 ? 1 : -1) * obb.size.z
 		};
 		vertices[i] = obb.center +
 			obb.orientation[0] * localVertex.x +
@@ -327,7 +327,7 @@ bool isCollision(const Triangle& triangle, const Segment& segment) {
 }
 
 bool isCollision(const AABB& a, const AABB& b) {
-	if((a.min.x <= b.max.x && a.max.x >= b.min.x) &&
+	if ((a.min.x <= b.max.x && a.max.x >= b.min.x) &&
 		(a.min.y <= b.max.y && a.max.y >= b.min.y) &&
 		(a.min.z <= b.max.z && a.max.z >= b.min.z)) {
 		return true;
@@ -449,12 +449,12 @@ bool isCollision(const Sphere& sphere, const OBB& obb) {
 		obb.orientation[2].x, obb.orientation[2].y, obb.orientation[2].z, 0,
 		0, 0, 0, 1
 	);
-	Matrix4x4 obbWorldMatrix = obbRotationMatrix* Matrix4x4::MakeTranslateMatrix(obb.center) ;
+	Matrix4x4 obbWorldMatrix = obbRotationMatrix * Matrix4x4::MakeTranslateMatrix(obb.center);
 	Matrix4x4 obbInverseMatrix = Matrix4x4::Inverse(obbWorldMatrix);
 
 	Vector3 centerInOBBLocalSpace = Transform(sphere.center, obbInverseMatrix);
 
-	AABB aabbOBBLocal{.min = obb.size * -1, .max = obb.size};
+	AABB aabbOBBLocal{ .min = obb.size * -1, .max = obb.size };
 	Sphere sphereInOBBLocal{ .center = centerInOBBLocalSpace, .radius = sphere.radius };
 
 	return isCollision(sphereInOBBLocal, aabbOBBLocal);
@@ -540,7 +540,7 @@ bool isCollision(const OBB& obb1, const OBB& obb2) {
 	axes[14] = Vector3::Cross(obb1.orientation[2], obb2.orientation[2]);
 
 	// 各軸に対して投影を行い、重なりがあるかを確認する
-	for(int i = 0; i < 15; ++i) {
+	for (int i = 0; i < 15; ++i) {
 		Vector3 axis = axes[i];
 		if (axis.Length() < 1e-6f) {
 			continue; // 軸がゼロベクトルの場合はスキップ
@@ -578,9 +578,9 @@ bool isCollision(const OBB& obb1, const OBB& obb2) {
 
 		if (longSpan > sumSpan) {
 			return false; // 分離軸が見つかった場合、衝突していない
-		}		
+		}
 	}
-	
+
 	return true;
 }
 
@@ -605,10 +605,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	Vector3 pos1 = { 0, 0, 0 };
 
-	Vector3 controlPoints[3] = {
-		{-0.8f, 0.58f, 1.0f},
-		{1.76f, 1.0f, -0.3f},
-		{0.94f, -0.7f, 2.3f},
+	Vector3 translates[3] = {
+		{0.2f, 1.0f, 0.0f},
+		{0.4f, 0.0f, 0.0f},
+		{0.3f, 0.0f, 0.0f},
+	};
+
+	Vector3 rotations[3] = {
+		{0.0f, 0.0f, -6.8f},
+		{0.0f, 0.0f, -1.4f},
+		{0.0f, 0.0f, 0.0f},
+	};
+
+	Vector3 scales[3] = {
+		{1.f,1.f,1.f},
+		{1.f,1.f,1.f},
+		{1.f,1.f,1.f},
 	};
 
 	// ウィンドウの×ボタンが押されるまでループ
@@ -620,18 +632,52 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		memcpy(preKeys, keys, 256);
 		Novice::GetHitKeyStateAll(keys);
 
+		preMousePos = mousePos;
+		Novice::GetMousePosition(&mousePos.x, &mousePos.y);
+
+
+		mouseWheel = Novice::GetWheel();
+
+		///
+		/// ↓更新処理ここから
+		///
+
+		if (Novice::IsPressMouse(1)) {
+			cameraRotate.y += (mousePos.x - preMousePos.x) * 0.01f;
+			cameraRotate.x += (mousePos.y - preMousePos.y) * 0.01f;
+		}
+
+		if (mouseWheel != 0) {
+			Vector3 cameraDirection;
+			cameraDirection.x = cosf(cameraRotate.x) * sinf(cameraRotate.y);
+			cameraDirection.y = sinf(cameraRotate.x);
+			cameraDirection.z = cosf(cameraRotate.x) * cosf(cameraRotate.y);
+			cameraDirection = cameraDirection.Normalized();
+			cameraPos = cameraPos + cameraDirection * float(mouseWheel) * 0.01f;
+		}
+
+
+
 		///
 		/// ↓更新処理ここから
 		///
 		ImGui::Begin("window");
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
+		ImGui::Text("-------------");
+		ImGui::DragFloat3("translate0", &translates[0].x, 0.1f);
+		ImGui::DragFloat3("rotate0", &rotations[0].x, 0.1f);
+		ImGui::DragFloat3("scale0", &scales[0].x, 0.1f);
+		ImGui::DragFloat3("translate1", &translates[1].x, 0.1f);
+		ImGui::DragFloat3("rotate1", &rotations[1].x, 0.1f);
+		ImGui::DragFloat3("scale1", &scales[1].x, 0.1f);
+		ImGui::DragFloat3("translate2", &translates[2].x, 0.1f);
+		ImGui::DragFloat3("rotate2", &rotations[2].x, 0.1f);
+		ImGui::DragFloat3("scale2", &scales[2].x, 0.1f);
 
-		ImGui::DragFloat3("controlPoint0", &controlPoints[0].x, 0.1f);
-		ImGui::DragFloat3("controlPoint1", &controlPoints[1].x, 0.1f);
-		ImGui::DragFloat3("controlPoint2", &controlPoints[2].x, 0.1f);
+
 		ImGui::End();
-		
+
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -640,18 +686,43 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
 
 		// Add this temporary debug code after line 300 (after creating matrices)
-		Sphere a;
 		///
 		/// ↑更新処理ここまで
 		///
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawBezier(controlPoints[0], controlPoints[1], controlPoints[2], viewMatrix * projectionMatrix, viewPortMatrix, 0x000000FF);
-		for (Vector3 v : controlPoints) {
-			DrawSphere({ v, 0.01f }, viewMatrix * projectionMatrix, viewPortMatrix, 0xFF0000FF);
+		Matrix4x4 partsAffine[3] = {
+			Matrix4x4::MakeAffineMatrix(scales[0], rotations[0], translates[0]),
+			Matrix4x4::MakeAffineMatrix(scales[1], rotations[1], translates[1]),
+			Matrix4x4::MakeAffineMatrix(scales[2], rotations[2], translates[2])
+		};
+
+		uint32_t colors[3] = {
+			0xFF0000FF,
+			0x00FF00FF,
+			0x0000FFFF,
+		};
+		
+		Matrix4x4 modelMatrix = Matrix4x4::Identity();
+		Vector3 DrawPoses[3];
+		for (int i = 0; i < 3; ++i) {
+			modelMatrix = partsAffine[i] * modelMatrix;
+			Vector3 drawpos = Transform(Vector3(0, 0, 0), modelMatrix);
+
+			DrawSphere(Sphere{ drawpos, 0.05f }, viewMatrix * projectionMatrix, viewPortMatrix, colors[i]);
+			DrawPoses[i] = Transform(drawpos , viewMatrix * projectionMatrix* viewPortMatrix);
+		}
+
+		for (int i = 0; i < 2; ++i) {
+			Novice::DrawLine(
+				static_cast<int>(DrawPoses[i].x), static_cast<int>(DrawPoses[i].y),
+				static_cast<int>(DrawPoses[i + 1].x), static_cast<int>(DrawPoses[i + 1].y),
+				0xFFFFFFFF
+			);
 		}
 		
+
 
 
 		///
