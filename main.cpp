@@ -141,6 +141,34 @@ Vector3 Perpendicular(const Vector3& v1) {
 	return Vector3(0.f, -v1.z, v1.y);
 }
 
+void DrawBezier(const Vector3& controlPoint0, const Vector3& controlPoint1, const Vector3& controlPoint2, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
+	const int step = 20;
+	const float stepf = static_cast<float>(step);
+	
+	Matrix4x4 wvpVpMatrix = viewProjectionMatrix * viewportMatrix;
+	
+	Vector3 screenP0 = Transform(controlPoint0, wvpVpMatrix);
+	Vector3 screenP1 = Transform(controlPoint1, wvpVpMatrix);
+	Vector3 screenP2 = Transform(controlPoint2, wvpVpMatrix);
+
+	Vector3 prevDrawPoint = screenP0;
+
+	for (int i = 1; i <= step; i++) {
+		float t = static_cast<float>(i) / stepf;
+
+		Vector3 p0p1 = Lerp(screenP0, screenP1, t);
+		Vector3 p1p2 = Lerp(screenP1, screenP2, t);
+		Vector3 DrawPoint = Lerp(p0p1, p1p2, t);
+
+		Novice::DrawLine(
+			static_cast<int>(prevDrawPoint.x), static_cast<int>(prevDrawPoint.y),
+			static_cast<int>(DrawPoint.x), static_cast<int>(DrawPoint.y), color
+		);
+
+		prevDrawPoint = DrawPoint;
+	}
+}
+
 void DrawPlane(const Plane& plane, const Matrix4x4& viewProjectionMatrix, const Matrix4x4& viewportMatrix, uint32_t color) {
 	Vector3 center = plane.normal * plane.distance;
 	Vector3 perpendicular[4];
@@ -577,32 +605,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	Vector3 pos1 = { 0, 0, 0 };
 
-	Vector3 rotate1{ 0.f,0.f,0.f };
-	OBB obb1{
-		.center = { -1.f, 0.f, 0.f },
-		.orientation = {Vector3(1.f, 0.f, 0.f),
-						Vector3(0.f, 1.f, 0.f),
-						Vector3(0.f, 0.f, 1.f)},
-		.size = { 0.5f, 0.5f, 0.5f }
-	};
-
-	Vector3 rotate2{ 0.f,0.f,0.f };
-	OBB obb2{
-		.center = { 2.f, 1.f, 1.f },
-		.orientation = {Vector3(1.f, 0.f, 0.f),
-						Vector3(0.f, 1.f, 0.f),
-						Vector3(0.f, 0.f, 1.f)},
-		.size = { 0.5f, 0.5f, 0.5f }
-	};
-
-	Sphere sphere1{
-		.center = { 0.f, 0.f, 0.f },
-		.radius = 1.f
-	};
-
-	Segment segment1{
-		.origin = { 0.f, 0.f, 0.f },
-		.diff = { 1.f, 1.f, 1.f }
+	Vector3 controlPoints[3] = {
+		{-0.8f, 0.58f, 1.0f},
+		{1.76f, 1.0f, -0.3f},
+		{0.94f, -0.7f, 2.3f},
 	};
 
 	// ウィンドウの×ボタンが押されるまでループ
@@ -644,48 +650,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 
-		
-
-		ImGui::DragFloat3("obb.center", &obb1.center.x, 0.01f);
-		ImGui::DragFloat3("obb.size", &obb1.size.x, 0.01f);
-		ImGui::DragFloat3("rotation", &rotate1.x, 0.01f);
-
-		ImGui::DragFloat3("segment.origin", &segment1.origin.x, 0.01f);
-		ImGui::DragFloat3("segment.diff", &segment1.diff.x, 0.01f);
-
-		/*ImGui::DragFloat3("obb2.center", &obb2.center.x, 0.01f);
-		ImGui::DragFloat3("obb2.size", &obb2.size.x, 0.01f);
-		ImGui::DragFloat3("rotation2", &rotate2.x, 0.01f);*/
-
-		/*ImGui::DragFloat3("sphere.center", &sphere1.center.x, 0.01f);
-		ImGui::DragFloat("sphere.radius", &sphere1.radius, 0.01f);*/
-
+		ImGui::DragFloat3("controlPoint0", &controlPoints[0].x, 0.1f);
+		ImGui::DragFloat3("controlPoint1", &controlPoints[1].x, 0.1f);
+		ImGui::DragFloat3("controlPoint2", &controlPoints[2].x, 0.1f);
 		ImGui::End();
-		Matrix4x4 rotationMatrix = Matrix4x4::MakeRotationXMatrix(rotate1.x) * Matrix4x4::MakeRotationYMatrix(rotate1.y) * Matrix4x4::MakeRotationZMatrix(rotate1.z);
-		obb1.orientation[0].x = rotationMatrix.m[0][0];
-		obb1.orientation[0].y = rotationMatrix.m[0][1];
-		obb1.orientation[0].z = rotationMatrix.m[0][2];
-
-		obb1.orientation[1].x = rotationMatrix.m[1][0];
-		obb1.orientation[1].y = rotationMatrix.m[1][1];
-		obb1.orientation[1].z = rotationMatrix.m[1][2];
-
-		obb1.orientation[2].x = rotationMatrix.m[2][0];
-		obb1.orientation[2].y = rotationMatrix.m[2][1];
-		obb1.orientation[2].z = rotationMatrix.m[2][2];
-
-		Matrix4x4 rotationMatrix2 = Matrix4x4::MakeRotationXMatrix(rotate2.x) * Matrix4x4::MakeRotationYMatrix(rotate2.y) * Matrix4x4::MakeRotationZMatrix(rotate2.z);
-		obb2.orientation[0].x = rotationMatrix2.m[0][0];
-		obb2.orientation[0].y = rotationMatrix2.m[0][1];
-		obb2.orientation[0].z = rotationMatrix2.m[0][2];
-
-		obb2.orientation[1].x = rotationMatrix2.m[1][0];
-		obb2.orientation[1].y = rotationMatrix2.m[1][1];
-		obb2.orientation[1].z = rotationMatrix2.m[1][2];
-
-		obb2.orientation[2].x = rotationMatrix2.m[2][0];
-		obb2.orientation[2].y = rotationMatrix2.m[2][1];
-		obb2.orientation[2].z = rotationMatrix2.m[2][2];
+		
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -694,36 +663,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Matrix4x4 viewPortMatrix = Matrix4x4::MakeViewportMatrix(0, 0, 1280, 720, 0.0f, 1.0f);
 
 		// Add this temporary debug code after line 300 (after creating matrices)
-		Vector3 testPoint(0, 0, 0); // Origin
-		Vector3 transformed = Transform(testPoint, viewMatrix * projectionMatrix * viewPortMatrix);
-		Novice::ScreenPrintf(0, 20, "Origin (0,0,0) transforms to: %.1f, %.1f", transformed.x, transformed.y);
-
-		Vector3 testPoint2(1, 0, 0); // X-axis
-		Vector3 transformed2 = Transform(testPoint2, viewMatrix * projectionMatrix * viewPortMatrix);
-		Novice::ScreenPrintf(0, 40, "Point (1,0,0) transforms to: %.1f, %.1f", transformed2.x, transformed2.y);
-
-
-		bool collision = isCollision(segment1, obb1);
-
+		Sphere a;
 		///
 		/// ↑更新処理ここまで
 		///
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawOBB(obb1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
-		//DrawOBB(obb2, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
-		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix,  0xFFFFFFFF);
-
-		//draw segment
-		Vector3 segmentStartScreen = Transform(segment1.origin, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 segmentEndScreen = Transform(segment1.origin + segment1.diff, viewMatrix * projectionMatrix * viewPortMatrix);
-		Novice::DrawLine(static_cast<int>(segmentStartScreen.x), static_cast<int>(segmentStartScreen.y),
-			static_cast<int>(segmentEndScreen.x), static_cast<int>(segmentEndScreen.y),
-			0xFFFFFFFF);
-
-		//DrawSphere(sphere1, viewMatrix * projectionMatrix, viewPortMatrix, collision ? 0xFF0000FF : 0xFFFFFFFF);
+		DrawBezier(controlPoints[0], controlPoints[1], controlPoints[2], viewMatrix * projectionMatrix, viewPortMatrix, 0x000000FF);
+		for (Vector3 v : controlPoints) {
+			DrawSphere({ v, 0.01f }, viewMatrix * projectionMatrix, viewPortMatrix, 0xFF0000FF);
+		}
 		
+
 
 		///
 		/// ↓描画処理ここから
