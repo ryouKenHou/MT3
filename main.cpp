@@ -636,7 +636,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::GetMousePosition(&mousePos.x, &mousePos.y);
 
 
-		mouseWheel = Novice::GetWheel();
+		mouseWheel = Novice::GetWheel(); 
 
 		///
 		/// ↓更新処理ここから
