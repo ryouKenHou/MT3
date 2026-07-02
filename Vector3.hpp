@@ -13,6 +13,17 @@ struct Vector3 {
 		return Vector3(x + other.x, y + other.y, z + other.z);
 	}
 
+	void operator+=(const Vector3& other) {
+		x = x + other.x;
+		y = y + other.y;
+		z = z + other.z;
+	}
+	void operator-=(const Vector3& other) {
+		x = x - other.x;
+		y = y - other.y;
+		z = z - other.z;
+	}
+
 	Vector3 operator-(const Vector3& other) const {
 		return Vector3(x - other.x, y - other.y, z - other.z);
 	}
@@ -22,7 +33,7 @@ struct Vector3 {
 	}
 
 	Vector3 operator/(float scalar) const {
-		return Vector3((1.f/x )* scalar, y * scalar, (1.f/z) * scalar);
+		return Vector3(x / scalar, y / scalar, z / scalar);
 	}
 
 	float Length() const {
