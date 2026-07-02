@@ -603,25 +603,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Vector3 pos1 = { 0, 0, 0 };
-
-	Vector3 translates[3] = {
-		{0.2f, 1.0f, 0.0f},
-		{0.4f, 0.0f, 0.0f},
-		{0.3f, 0.0f, 0.0f},
-	};
-
-	Vector3 rotations[3] = {
-		{0.0f, 0.0f, -6.8f},
-		{0.0f, 0.0f, -1.4f},
-		{0.0f, 0.0f, 0.0f},
-	};
-
-	Vector3 scales[3] = {
-		{1.f,1.f,1.f},
-		{1.f,1.f,1.f},
-		{1.f,1.f,1.f},
-	};
+	Vector3 a{ 0.2f, 1.0f, 0.0f };
+	Vector3 b{ 2.4f, 3.1f, 1.2f };
+	Vector3 c = a + b;
+	Vector3 d = a - b;
+	Vector3 e = a * 2.4f;
+	Vector3 rotate{ 0.4f, 1.43f, -0.8f };
+	Matrix4x4 rotateXMatrix = Matrix4x4::MakeRotationXMatrix(rotate.x);
+	Matrix4x4 rotateYMatrix = Matrix4x4::MakeRotationYMatrix(rotate.y);
+	Matrix4x4 rotateZMatrix = Matrix4x4::MakeRotationZMatrix(rotate.z);
+	Matrix4x4 rotateMatrix = rotateXMatrix * rotateYMatrix * rotateZMatrix;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -636,7 +627,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::GetMousePosition(&mousePos.x, &mousePos.y);
 
 
-		mouseWheel = Novice::GetWheel(); 
+		mouseWheel = Novice::GetWheel();
 
 		///
 		/// ↓更新処理ここから
@@ -665,16 +656,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::Text("-------------");
-		ImGui::DragFloat3("translate0", &translates[0].x, 0.1f);
-		ImGui::DragFloat3("rotate0", &rotations[0].x, 0.1f);
-		ImGui::DragFloat3("scale0", &scales[0].x, 0.1f);
-		ImGui::DragFloat3("translate1", &translates[1].x, 0.1f);
-		ImGui::DragFloat3("rotate1", &rotations[1].x, 0.1f);
-		ImGui::DragFloat3("scale1", &scales[1].x, 0.1f);
-		ImGui::DragFloat3("translate2", &translates[2].x, 0.1f);
-		ImGui::DragFloat3("rotate2", &rotations[2].x, 0.1f);
-		ImGui::DragFloat3("scale2", &scales[2].x, 0.1f);
-
+		ImGui::Text("c:%f, %f, %f", c.x, c.y, c.z);
+		ImGui::Text("d:%f, %f, %f", d.x, d.y, d.z);
+		ImGui::Text("e:%f, %f, %f", e.x, e.y, e.z);
+		ImGui::Text(
+			"matrix:\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
+			rotateMatrix.m[0][0], rotateMatrix.m[0][1], rotateMatrix.m[0][2], rotateMatrix.m[0][3],
+			rotateMatrix.m[1][0], rotateMatrix.m[1][1], rotateMatrix.m[1][2], rotateMatrix.m[1][3],
+			rotateMatrix.m[2][0], rotateMatrix.m[2][1], rotateMatrix.m[2][2], rotateMatrix.m[2][3],
+			rotateMatrix.m[3][0], rotateMatrix.m[3][1], rotateMatrix.m[3][2], rotateMatrix.m[3][3]
+		);
 
 		ImGui::End();
 
@@ -691,37 +682,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
-
-		Matrix4x4 partsAffine[3] = {
-			Matrix4x4::MakeAffineMatrix(scales[0], rotations[0], translates[0]),
-			Matrix4x4::MakeAffineMatrix(scales[1], rotations[1], translates[1]),
-			Matrix4x4::MakeAffineMatrix(scales[2], rotations[2], translates[2])
-		};
-
-		uint32_t colors[3] = {
-			0xFF0000FF,
-			0x00FF00FF,
-			0x0000FFFF,
-		};
-		
-		Matrix4x4 modelMatrix = Matrix4x4::Identity();
-		Vector3 DrawPoses[3];
-		for (int i = 0; i < 3; ++i) {
-			modelMatrix = partsAffine[i] * modelMatrix;
-			Vector3 drawpos = Transform(Vector3(0, 0, 0), modelMatrix);
-
-			DrawSphere(Sphere{ drawpos, 0.05f }, viewMatrix * projectionMatrix, viewPortMatrix, colors[i]);
-			DrawPoses[i] = Transform(drawpos , viewMatrix * projectionMatrix* viewPortMatrix);
-		}
-
-		for (int i = 0; i < 2; ++i) {
-			Novice::DrawLine(
-				static_cast<int>(DrawPoses[i].x), static_cast<int>(DrawPoses[i].y),
-				static_cast<int>(DrawPoses[i + 1].x), static_cast<int>(DrawPoses[i + 1].y),
-				0xFFFFFFFF
-			);
-		}
-		
 
 
 
