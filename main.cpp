@@ -64,6 +64,7 @@ struct Spring {
 	Vector3 anchor;
 	float naturalLength;
 	float stiffness;
+	float dampingCoefficient;
 };
 
 struct Ball {
@@ -622,6 +623,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	spring.anchor = { 0.f,0.f,0.f };
 	spring.naturalLength = 1.f;
 	spring.stiffness = 100.f;
+	spring.dampingCoefficient = 2.f;
 
 	Ball ball{};
 	ball.position = { 1.2f, 0.f, 0.f };
@@ -631,28 +633,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	float deltaTime = 1.f / 60.f;
 
-	Vector3 direction ;
-	Vector3 restPosition ;
-	Vector3 displacement ;
-	Vector3 restoringForce ;
-	Vector3 force;
-
-	Vector3 diff = ball.position - spring.anchor;
-	float length = Vector3::Length(diff);
-	if (length != 0.f) {
-		direction = Vector3::Normalized(diff);
-		restPosition = spring.anchor + direction * spring.naturalLength;
-		displacement = length * (ball.position - restPosition);
-		restoringForce = -spring.stiffness * displacement;
-		force = restoringForce;
-		
-		ball.acceleration = force / ball.mass;
-	}
 
 	
 
-	ball.velocity += ball.acceleration * deltaTime;
-	ball.position += ball.velocity * deltaTime;
+	
+
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -688,8 +673,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 
 
-		
+		Vector3 diff = ball.position - spring.anchor;
+		float length = Vector3::Length(diff);
+		if (length != 0.f) {
+			Vector3 direction = Vector3::Normalized(diff);
+			Vector3 restPosition = spring.anchor + direction * spring.naturalLength;
+			Vector3 displacement = length * (ball.position - restPosition);
+			Vector3 restoringForce = -spring.stiffness * displacement;
+			Vector3 dampingForce = -spring.dampingCoefficient * ball.velocity;
+			Vector3 force = restoringForce + dampingForce;
 
+			ball.acceleration = force / ball.mass;
+		}
+
+		ball.velocity += ball.acceleration * deltaTime;
+		ball.position += ball.velocity * deltaTime;
 
 
 		///
@@ -699,15 +697,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::Text("-------------");
-		ImGui::Text("diff: %f, %f, %f", diff.x, diff.y, diff.z);
-		ImGui::Text("length: %f", length);
-		ImGui::Text( "dircetion: %f, %f, %f", direction.x, direction.y, direction.z);
-		ImGui::Text("restPosition: %f, %f, %f", restPosition.x, restPosition.y, restPosition.z);
-		ImGui::Text("displacement: %f, %f, %f", displacement.x, displacement.y, displacement.z);
-		ImGui::Text("restoringForce: %f, %f, %f", restoringForce.x, restoringForce.y, restoringForce.z);
-		ImGui::Text("ball.acceleration: %f, %f, %f", ball.acceleration.x, ball.acceleration.y, ball.acceleration.z);
-		ImGui::Text("ball.velocity: %f, %f, %f", ball.velocity.x, ball.velocity.y, ball.velocity.z);
-		ImGui::Text("ball.position: %f, %f, %f", ball.position.x, ball.position.y, ball.position.z);
 
 		ImGui::End();
 
@@ -732,7 +721,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Vector3 DrawSpringEnd = Transform(springEnd, viewMatrix * projectionMatrix * viewPortMatrix);
 		Vector3 DrawSpringStart = Transform(springStart, viewMatrix * projectionMatrix * viewPortMatrix);
 
-		Novice::DrawLine(static_cast<int>(DrawSpringStart.x), static_cast<int>(DrawSpringStart.y), static_cast<int>(DrawSpringEnd.x), static_cast<int>(DrawSpringEnd.y), 0xFF0000FF);
+		Novice::DrawLine(static_cast<int>(DrawSpringStart.x), static_cast<int>(DrawSpringStart.y), static_cast<int>(DrawSpringEnd.x), static_cast<int>(DrawSpringEnd.y), 0xFFFFFFFF);
 
 
 
