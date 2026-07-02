@@ -21,6 +21,10 @@ struct Vector3 {
 		return Vector3(x * scalar, y * scalar, z * scalar);
 	}
 
+	Vector3 operator/(float scalar) const {
+		return Vector3((1.f/x )* scalar, y * scalar, (1.f/z) * scalar);
+	}
+
 	float Length() const {
 		return sqrt(x * x + y * y + z * z);
 	}
@@ -88,7 +92,18 @@ struct Vector3 {
 	
 };
 
-Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t) {
+inline Vector3 operator*(const float s, const Vector3 v) {
+	return v * s;
+}
+
+inline Vector3 operator-(const Vector3 v) {
+	return v * -1.f ;
+}
+inline Vector3 operator+( const Vector3 v) {
+	return v;
+}
+
+inline Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t) {
 	return v1 + ((v2 - v1) *  t);
 }
 
