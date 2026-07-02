@@ -22,7 +22,7 @@ struct Vector3 {
 	}
 
 	Vector3 operator/(float scalar) const {
-		return Vector3((1.f/x )* scalar, y * scalar, (1.f/z) * scalar);
+		return Vector3(x / scalar, y / scalar, z / scalar);
 	}
 
 	float Length() const {
