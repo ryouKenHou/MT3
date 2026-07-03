@@ -3,6 +3,12 @@
 #include <cmath>
 #include "Vector3.hpp"
 
+struct Matrix4x4;
+Matrix4x4 operator*(const Matrix4x4& m, const Matrix4x4& other);
+Matrix4x4 operator*(const Matrix4x4& m, const float scalar);
+Matrix4x4 operator+(const Matrix4x4& m, const Matrix4x4& other);
+Matrix4x4 operator-(const Matrix4x4& m, const Matrix4x4& other);
+
 struct Matrix4x4 {
 	float m[4][4];
 	Matrix4x4() {
@@ -21,49 +27,6 @@ struct Matrix4x4 {
         m[1][0] = m10; m[1][1] = m11; m[1][2] = m12; m[1][3] = m13;
         m[2][0] = m20; m[2][1] = m21; m[2][2] = m22; m[2][3] = m23;
         m[3][0] = m30; m[3][1] = m31; m[3][2] = m32; m[3][3] = m33;
-	}
-
-	Matrix4x4 operator*(const Matrix4x4& other) const {
-		Matrix4x4 result;
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				result.m[i][j] = 0.0f;
-				for (int k = 0; k < 4; ++k) {
-					result.m[i][j] += m[i][k] * other.m[k][j];
-				}
-			}
-		}
-		return result;
-	}	
-
-	Matrix4x4 operator*(const float scalar) const {
-		Matrix4x4 result;
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				result.m[i][j] = m[i][j] * scalar;
-			}
-		}
-		return result;
-	}
-
-	Matrix4x4 operator+(const Matrix4x4& other) const {
-		Matrix4x4 result;
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				result.m[i][j] = m[i][j] + other.m[i][j];
-			}
-		}
-		return result;
-	}
-
-	Matrix4x4 operator-(const Matrix4x4& other) const {
-		Matrix4x4 result;
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				result.m[i][j] = m[i][j] - other.m[i][j];
-			}
-		}
-		return result;
 	}
 
 	// Static member functions for operations between two matrices
@@ -283,6 +246,49 @@ struct Matrix4x4 {
 
 
 };
+
+inline Matrix4x4 operator*(const Matrix4x4& m, const Matrix4x4& other)  {
+    Matrix4x4 result;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result.m[i][j] = 0.0f;
+            for (int k = 0; k < 4; ++k) {
+                result.m[i][j] += m.m[i][k] * other.m[k][j];
+            }
+        }
+    }
+    return result;
+}
+
+inline Matrix4x4 operator*(const Matrix4x4& m, const float scalar)  {
+    Matrix4x4 result;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result.m[i][j] = m.m[i][j] * scalar;
+        }
+    }
+    return result;
+}
+
+inline Matrix4x4 operator+(const Matrix4x4& m, const Matrix4x4& other)  {
+    Matrix4x4 result;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result.m[i][j] = m.m[i][j] + other.m[i][j];
+        }
+    }
+    return result;
+}
+
+inline Matrix4x4 operator-(const Matrix4x4& m, const Matrix4x4& other) {
+    Matrix4x4 result;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result.m[i][j] = m.m[i][j] - other.m[i][j];
+        }
+    }
+    return result;
+}
 
 inline Vector3 Transform(const Vector3& v, const Matrix4x4& m) {
     float x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + m.m[3][0];

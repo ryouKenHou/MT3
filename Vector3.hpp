@@ -1,6 +1,19 @@
 ﻿#pragma once
 #include <cmath>
 
+struct Vector3;
+Vector3 operator+(const Vector3& v1, const Vector3& other);
+void operator+=(Vector3& v1, const Vector3& other);
+void operator-=(Vector3& v1, const Vector3& other);
+Vector3 operator-(const Vector3& v1, const Vector3& other);
+Vector3 operator*(const Vector3& v1, float scalar);
+Vector3 operator/(const Vector3& v1, float scalar);
+Vector3 operator*(const float s, const Vector3 v);
+Vector3 operator-(const Vector3 v);
+Vector3 operator+(const Vector3 v);
+
+
+
 struct Vector3 {
 	float x;
 	float y;
@@ -8,33 +21,6 @@ struct Vector3 {
 
 	Vector3() : x(0), y(0), z(0) {}
 	Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
-
-	Vector3 operator+(const Vector3& other) const {
-		return Vector3(x + other.x, y + other.y, z + other.z);
-	}
-
-	void operator+=(const Vector3& other) {
-		x = x + other.x;
-		y = y + other.y;
-		z = z + other.z;
-	}
-	void operator-=(const Vector3& other) {
-		x = x - other.x;
-		y = y - other.y;
-		z = z - other.z;
-	}
-
-	Vector3 operator-(const Vector3& other) const {
-		return Vector3(x - other.x, y - other.y, z - other.z);
-	}
-
-	Vector3 operator*(float scalar) const {
-		return Vector3(x * scalar, y * scalar, z * scalar);
-	}
-
-	Vector3 operator/(float scalar) const {
-		return Vector3(x / scalar, y / scalar, z / scalar);
-	}
 
 	float Length() const {
 		return sqrt(x * x + y * y + z * z);
@@ -99,24 +85,53 @@ struct Vector3 {
 			v1.x * v2.y - v1.y * v2.x
 		);
 	}
-
+	
 	
 };
+
+// Member operator overloads
+inline Vector3 operator+(const Vector3& v1, const Vector3& other)  {
+	return Vector3(v1.x + other.x, v1.y + other.y, v1.z + other.z);
+}
+
+inline void operator+=(Vector3& v1, const Vector3& other) {
+	v1.x = v1.x + other.x;
+	v1.y = v1.y + other.y;
+	v1.z = v1.z + other.z;
+}
+
+inline void operator-=(Vector3& v1, const Vector3& other) {
+	v1.x = v1.x - other.x;
+	v1.y = v1.y - other.y;
+	v1.z = v1.z - other.z;
+}
+
+inline Vector3 operator-(const Vector3& v1, const Vector3& other)  {
+	return Vector3(v1.x - other.x, v1.y - other.y, v1.z - other.z);
+}
+
+inline Vector3 operator*(const Vector3& v1, float scalar)  {
+	return Vector3(v1.x * scalar, v1.y * scalar, v1.z * scalar);
+}
+
+inline Vector3 operator/(const Vector3& v1, float scalar) {
+	return Vector3(v1.x / scalar, v1.y / scalar, v1.z / scalar);
+}
 
 inline Vector3 operator*(const float s, const Vector3 v) {
 	return v * s;
 }
 
 inline Vector3 operator-(const Vector3 v) {
-	return v * -1.f ;
+	return v * -1.f;
 }
-inline Vector3 operator+( const Vector3 v) {
+
+inline Vector3 operator+(const Vector3 v) {
 	return v;
 }
 
 inline Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t) {
-	return v1 + ((v2 - v1) *  t);
+	return v1 + ((v2 - v1) * t);
 }
-
 
 

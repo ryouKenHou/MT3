@@ -637,18 +637,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Plane plane;
-	plane.normal = Vector3::Normalized(Vector3(-0.2f, 0.9f, -0.3f));
-	plane.distance = 0.f;
-
-	
-	float deltaTime = 1.0f / 60.0f;
-
-	Ball ball;
-	ball.position = Vector3(0.8f, 1.2f, 0.3f);
-	ball.mass = 2.f;
-	ball.radius = 0.05f;
-	ball.color = WHITE;
+	Vector3 a{ 0.2f, 1.0f, 0.0f };
+	Vector3 b{ 2.4f, 3.1f, 1.2f };
+	Vector3 c = a + b;
+	Vector3 d = a - b;
+	Vector3 e = a * 2.4f;
+	Vector3 rotate{ 0.4f, 1.43f, -0.8f };
+	Matrix4x4 rotateXMatrix = Matrix4x4::MakeRotationXMatrix(rotate.x);
+	Matrix4x4 rotateYMatrix = Matrix4x4::MakeRotationYMatrix(rotate.y);
+	Matrix4x4 rotateZMatrix = Matrix4x4::MakeRotationZMatrix(rotate.z);
+	Matrix4x4 rotateMatrix = rotateXMatrix * rotateYMatrix * rotateZMatrix;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -684,7 +682,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 
 
-		
 
 		///
 		/// ↓更新処理ここから
@@ -693,19 +690,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::Text("-------------");
+		ImGui::Text("c:%f, %f, %f", c.x, c.y, c.z);
+		ImGui::Text("d:%f, %f, %f", d.x, d.y, d.z);
+		ImGui::Text("e:%f, %f, %f", e.x, e.y, e.z);
+		ImGui::Text(
+			"matrix:\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n%f, %f, %f, %f\n",
+			rotateMatrix.m[0][0], rotateMatrix.m[0][1], rotateMatrix.m[0][2], rotateMatrix.m[0][3],
+			rotateMatrix.m[1][0], rotateMatrix.m[1][1], rotateMatrix.m[1][2], rotateMatrix.m[1][3],
+			rotateMatrix.m[2][0], rotateMatrix.m[2][1], rotateMatrix.m[2][2], rotateMatrix.m[2][3],
+			rotateMatrix.m[3][0], rotateMatrix.m[3][1], rotateMatrix.m[3][2], rotateMatrix.m[3][3]
+		);
 
 		ImGui::End();
-
-		ball.acceleration = Vector3(0.f, -9.8f, 0.f);
-		ball.velocity = ball.velocity + ball.acceleration * deltaTime;
-		ball.position = ball.position + ball.velocity * deltaTime;
-
-		if (isCollision({ ball.position, ball.radius }, plane)) {
-			Vector3 reflected = Reflect(plane.normal, ball.velocity);
-			Vector3 projectToNoraml = Project(reflected, ball.velocity);
-			Vector3 movingDirection = reflected - projectToNoraml;
-			ball.velocity = movingDirection + projectToNoraml * 0.8f;
-		}
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -719,10 +715,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
-
-		DrawSphere({ ball.position, ball.radius }, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
-		DrawPlane(plane, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
-
 
 		///
 		/// ↓描画処理ここから
