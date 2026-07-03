@@ -619,25 +619,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Spring spring{};
-	spring.anchor = { 0.f,0.f,0.f };
-	spring.naturalLength = 1.f;
-	spring.stiffness = 100.f;
-	spring.dampingCoefficient = 2.f;
-
-	Ball ball{};
-	ball.position = { 1.2f, 0.f, 0.f };
-	ball.mass = 2.f;
-	ball.radius = 0.05f;
-	ball.color = BLUE;
+	Sphere ball{ Vector3(0.8f, 0.f, 0.f), 0.08f };
 
 	float deltaTime = 1.f / 60.f;
+	float angularVelocity = 3.14f;
+	float angle = 0.0f;
 
+	float radius = 0.8f;
 
-	
-
-	
-
+	bool start = false;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -673,22 +663,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		}
 
 
-		Vector3 diff = ball.position - spring.anchor;
-		float length = Vector3::Length(diff);
-		if (length != 0.f) {
-			Vector3 direction = Vector3::Normalized(diff);
-			Vector3 restPosition = spring.anchor + direction * spring.naturalLength;
-			Vector3 displacement = length * (ball.position - restPosition);
-			Vector3 restoringForce = -spring.stiffness * displacement;
-			Vector3 dampingForce = -spring.dampingCoefficient * ball.velocity;
-			Vector3 force = restoringForce + dampingForce;
-
-			ball.acceleration = force / ball.mass;
-		}
-
-		ball.velocity += ball.acceleration * deltaTime;
-		ball.position += ball.velocity * deltaTime;
-
+		
 
 		///
 		/// ↓更新処理ここから
@@ -698,8 +673,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::Text("-------------");
 
+		if (ImGui::Button("Start", ImVec2(100, 30))) {
+			start = !start;
+		}
+
 		ImGui::End();
 
+		if (start) {
+			angle += angularVelocity * deltaTime; // 1フレーム分の時間を加算
+
+			ball.center.x = cosf(angle) * radius;
+			ball.center.y = sinf(angle) * radius;
+		}
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -714,15 +699,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawSphere(Sphere{ ball.position, ball.radius }, viewMatrix * projectionMatrix, viewPortMatrix, ball.color);
+		DrawSphere(ball, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 		
-		Vector3 springEnd = ball.position;
-		Vector3 springStart = spring.anchor;
-		Vector3 DrawSpringEnd = Transform(springEnd, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 DrawSpringStart = Transform(springStart, viewMatrix * projectionMatrix * viewPortMatrix);
-
-		Novice::DrawLine(static_cast<int>(DrawSpringStart.x), static_cast<int>(DrawSpringStart.y), static_cast<int>(DrawSpringEnd.x), static_cast<int>(DrawSpringEnd.y), 0xFFFFFFFF);
-
+	
 
 
 		///
