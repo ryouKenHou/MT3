@@ -76,6 +76,14 @@ struct Ball {
 	unsigned int color;
 };
 
+struct Pendulum {
+	Vector3 anchor;
+	float length;
+	float angle;
+	float angularVelocity;
+	float angularAcceleration;
+};
+
 // ==============================================================================
 // 関数宣言
 // =============================================================================
@@ -619,15 +627,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Sphere ball{ Vector3(0.8f, 0.f, 0.f), 0.08f };
-
-	float deltaTime = 1.f / 60.f;
-	float angularVelocity = 3.14f;
-	float angle = 0.0f;
-
-	float radius = 0.8f;
+	Pendulum pendulum;
+	pendulum.anchor = { 0.f, 1.f, 0.f };
+	pendulum.length = 0.8f;
+	pendulum.angle = 0.7f;
+	pendulum.angularVelocity = 0.f;
+	pendulum.angularAcceleration = 0.f;
 
 	bool start = false;
+	float deltaTime = 1.0f / 60.0f;
+
+	Sphere ball;
+	ball.center = { pendulum.anchor.x + pendulum.length * sinf(pendulum.angle), pendulum.anchor.y - pendulum.length * cosf(pendulum.angle), pendulum.anchor.z };
+	ball.radius = 0.1f;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -680,10 +692,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::End();
 
 		if (start) {
-			angle += angularVelocity * deltaTime; // 1フレーム分の時間を加算
+			pendulum.angularAcceleration = -9.8f / pendulum.length * sinf(pendulum.angle);
+			pendulum.angularVelocity += pendulum.angularAcceleration * deltaTime;
+			pendulum.angle += pendulum.angularVelocity * deltaTime;
 
-			ball.center.x = cosf(angle) * radius;
-			ball.center.y = sinf(angle) * radius;
+			ball.center.x = pendulum.anchor.x + pendulum.length * sinf(pendulum.angle);
+			ball.center.y = pendulum.anchor.y - pendulum.length * cosf(pendulum.angle);
+
 		}
 
 
@@ -701,7 +716,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawSphere(ball, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 		
-	
+		Vector3 pendulumEnd = Transform(ball.center, viewMatrix * projectionMatrix*viewPortMatrix);
+		Vector3 pendulumStart = Transform(pendulum.anchor, viewMatrix * projectionMatrix* viewPortMatrix);
+		
+		Novice::DrawLine(static_cast<int>(pendulumStart.x), static_cast<int>(pendulumStart.y), static_cast<int>(pendulumEnd.x), static_cast<int>(pendulumEnd.y), 0xFFFFFFFF);
 
 
 		///
