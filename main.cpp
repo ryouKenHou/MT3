@@ -84,6 +84,14 @@ struct Pendulum {
 	float angularAcceleration;
 };
 
+struct ConicalPendulum {
+	Vector3 anchor;
+	float length;
+	float halfApexAngle;
+	float angle;
+	float angularVelocity;
+};
+
 // ==============================================================================
 // 関数宣言
 // =============================================================================
@@ -627,18 +635,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Pendulum pendulum;
-	pendulum.anchor = { 0.f, 1.f, 0.f };
-	pendulum.length = 0.8f;
-	pendulum.angle = 0.7f;
-	pendulum.angularVelocity = 0.f;
-	pendulum.angularAcceleration = 0.f;
+	ConicalPendulum conicalPendulum;
+	conicalPendulum.anchor = { 0.f, 1.f, 0.f };
+	conicalPendulum.length = 0.8f;
+	conicalPendulum.halfApexAngle = 0.7f;
+	conicalPendulum.angle = 0.0f;
+	conicalPendulum.angularVelocity = 0.f;
+	
 
 	bool start = false;
 	float deltaTime = 1.0f / 60.0f;
 
 	Sphere ball;
-	ball.center = { pendulum.anchor.x + pendulum.length * sinf(pendulum.angle), pendulum.anchor.y - pendulum.length * cosf(pendulum.angle), pendulum.anchor.z };
+	ball.center = { conicalPendulum.anchor.x + conicalPendulum.length * sinf(conicalPendulum.angle), conicalPendulum.anchor.y - conicalPendulum.length * cosf(conicalPendulum.angle), conicalPendulum.anchor.z };
 	ball.radius = 0.1f;
 
 	// ウィンドウの×ボタンが押されるまでループ
@@ -688,17 +697,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		if (ImGui::Button("Start", ImVec2(100, 30))) {
 			start = !start;
 		}
+		ImGui::DragFloat("length", &conicalPendulum.length, 0.01f);
+		ImGui::DragFloat("halfApexAngle", &conicalPendulum.halfApexAngle, 0.01f);
 
 		ImGui::End();
 
 		if (start) {
-			pendulum.angularAcceleration = -9.8f / pendulum.length * sinf(pendulum.angle);
-			pendulum.angularVelocity += pendulum.angularAcceleration * deltaTime;
-			pendulum.angle += pendulum.angularVelocity * deltaTime;
+			conicalPendulum.angularVelocity = std::sqrt(9.8f / conicalPendulum.length * sinf(conicalPendulum.halfApexAngle));
+			conicalPendulum.angle += conicalPendulum.angularVelocity * deltaTime;
 
-			ball.center.x = pendulum.anchor.x + pendulum.length * sinf(pendulum.angle);
-			ball.center.y = pendulum.anchor.y - pendulum.length * cosf(pendulum.angle);
-
+			float radius = conicalPendulum.length * sinf(conicalPendulum.halfApexAngle);
+			float height = conicalPendulum.length * cosf(conicalPendulum.halfApexAngle);
+			ball.center.x = conicalPendulum.anchor.x + radius * cosf(conicalPendulum.angle);
+			ball.center.y = conicalPendulum.anchor.y - height;
+			ball.center.z = conicalPendulum.anchor.z + radius * sinf(conicalPendulum.angle);
 		}
 
 
@@ -717,7 +729,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		DrawSphere(ball, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 		
 		Vector3 pendulumEnd = Transform(ball.center, viewMatrix * projectionMatrix*viewPortMatrix);
-		Vector3 pendulumStart = Transform(pendulum.anchor, viewMatrix * projectionMatrix* viewPortMatrix);
+		Vector3 pendulumStart = Transform(conicalPendulum.anchor, viewMatrix * projectionMatrix* viewPortMatrix);
 		
 		Novice::DrawLine(static_cast<int>(pendulumStart.x), static_cast<int>(pendulumStart.y), static_cast<int>(pendulumEnd.x), static_cast<int>(pendulumEnd.y), 0xFFFFFFFF);
 
