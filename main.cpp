@@ -637,25 +637,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Spring spring{};
-	spring.anchor = { 0.f,0.f,0.f };
-	spring.naturalLength = 1.f;
-	spring.stiffness = 100.f;
-	spring.dampingCoefficient = 2.f;
+	Plane plane;
+	plane.normal = Vector3::Normalized(Vector3(-0.2f, 0.9f, -0.3f));
+	plane.distance = 0.f;
 
-	Ball ball{};
-	ball.position = { 1.2f, 0.f, 0.f };
+
+	float deltaTime = 1.0f / 60.0f;
+
+	Ball ball;
+	ball.position = Vector3(0.8f, 1.2f, 0.3f);
 	ball.mass = 2.f;
 	ball.radius = 0.05f;
-	ball.color = BLUE;
-
-	float deltaTime = 1.f / 60.f;
-
-
-
-	bool start = false;
-
-
+	ball.color = WHITE;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -690,24 +683,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			cameraPos = cameraPos + cameraDirection * float(mouseWheel) * 0.01f;
 		}
 
-		if (start) {
 
-			Vector3 diff = ball.position - spring.anchor;
-			float length = Vector3::Length(diff);
-			if (length != 0.f) {
-				Vector3 direction = Vector3::Normalized(diff);
-				Vector3 restPosition = spring.anchor + direction * spring.naturalLength;
-				Vector3 displacement = length * (ball.position - restPosition);
-				Vector3 restoringForce = -spring.stiffness * displacement;
-				Vector3 dampingForce = -spring.dampingCoefficient * ball.velocity;
-				Vector3 force = restoringForce + dampingForce;
 
-				ball.acceleration = force / ball.mass;
-			}
-
-			ball.velocity += ball.acceleration * deltaTime;
-			ball.position += ball.velocity * deltaTime;
-		}
 
 		///
 		/// ↓更新処理ここから
@@ -716,13 +693,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::Text("-------------");
-
-		if(ImGui::Button("start")) {
-			start = true;
+		if(ImGui::Button("start")){
+			ball.position = Vector3(0.8f, 1.2f, 0.3f);
+			ball.velocity = Vector3(0.f, 0.f, 0.f);
 		}
 
 		ImGui::End();
 
+		ball.acceleration = Vector3(0.f, -9.8f, 0.f);
+		ball.velocity = ball.velocity + ball.acceleration * deltaTime;
+		ball.position = ball.position + ball.velocity * deltaTime;
+
+		if (isCollision({ ball.position, ball.radius }, plane)) {
+			Vector3 reflected = Reflect(plane.normal, ball.velocity);
+			Vector3 projectToNoraml = Project(reflected, ball.velocity);
+			Vector3 movingDirection = reflected - projectToNoraml;
+			ball.velocity = movingDirection + projectToNoraml * 0.8f;
+		}
 
 
 		Matrix4x4 cameraMatrix = Matrix4x4::MakeAffineMatrix(Vector3(1, 1, 1), cameraRotate, cameraPos);
@@ -737,15 +724,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawSphere(Sphere{ ball.position, ball.radius }, viewMatrix * projectionMatrix, viewPortMatrix, ball.color);
-
-		Vector3 springEnd = ball.position;
-		Vector3 springStart = spring.anchor;
-		Vector3 DrawSpringEnd = Transform(springEnd, viewMatrix * projectionMatrix * viewPortMatrix);
-		Vector3 DrawSpringStart = Transform(springStart, viewMatrix * projectionMatrix * viewPortMatrix);
-
-		Novice::DrawLine(static_cast<int>(DrawSpringStart.x), static_cast<int>(DrawSpringStart.y), static_cast<int>(DrawSpringEnd.x), static_cast<int>(DrawSpringEnd.y), 0xFFFFFFFF);
-
+		DrawSphere({ ball.position, ball.radius }, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
+		DrawPlane(plane, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 
 
 
