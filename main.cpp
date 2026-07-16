@@ -637,18 +637,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Vector3 cameraPos = { 0.f, 1.9f, -6.49f };
 	Vector3 cameraRotate = { 0.26f, 0.f, 0.f };
 
-	Plane plane;
-	plane.normal = Vector3::Normalized(Vector3(-0.2f, 0.9f, -0.3f));
-	plane.distance = 0.f;
+
+	ConicalPendulum conicalPendulum;
+	conicalPendulum.anchor = { 0.f, 1.f, 0.f };
+	conicalPendulum.length = 0.8f;
+	conicalPendulum.halfApexAngle = 0.7f;
+	conicalPendulum.angle = 0.0f;
+	conicalPendulum.angularVelocity = 0.f;
 
 
+	bool start = false;
 	float deltaTime = 1.0f / 60.0f;
 
-	Ball ball;
-	ball.position = Vector3(0.8f, 1.2f, 0.3f);
-	ball.mass = 2.f;
-	ball.radius = 0.05f;
-	ball.color = WHITE;
+	Sphere ball;
+	ball.center = { conicalPendulum.anchor.x + conicalPendulum.length * sinf(conicalPendulum.angle), conicalPendulum.anchor.y - conicalPendulum.length * cosf(conicalPendulum.angle), conicalPendulum.anchor.z };
+	ball.radius = 0.1f;
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
@@ -693,22 +696,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("cameraPos", &cameraPos.x, 0.1f);
 		ImGui::DragFloat3("cameraRotate", &cameraRotate.x, 0.01f);
 		ImGui::Text("-------------");
-		if(ImGui::Button("start")){
-			ball.position = Vector3(0.8f, 1.2f, 0.3f);
-			ball.velocity = Vector3(0.f, 0.f, 0.f);
+
+		if (ImGui::Button("Start", ImVec2(100, 30))) {
+			start = !start;
 		}
+		ImGui::DragFloat("length", &conicalPendulum.length, 0.01f);
+		ImGui::DragFloat("halfApexAngle", &conicalPendulum.halfApexAngle, 0.01f);
 
 		ImGui::End();
 
-		ball.acceleration = Vector3(0.f, -9.8f, 0.f);
-		ball.velocity = ball.velocity + ball.acceleration * deltaTime;
-		ball.position = ball.position + ball.velocity * deltaTime;
+		if (start) {
+			conicalPendulum.angularVelocity = std::sqrt(9.8f / (conicalPendulum.length * sinf(conicalPendulum.halfApexAngle)));
+			conicalPendulum.angle += conicalPendulum.angularVelocity * deltaTime;
 
-		if (isCollision({ ball.position, ball.radius }, plane)) {
-			Vector3 reflected = Reflect(plane.normal, ball.velocity);
-			Vector3 projectToNoraml = Project(reflected, ball.velocity);
-			Vector3 movingDirection = reflected - projectToNoraml;
-			ball.velocity = movingDirection + projectToNoraml * 0.8f;
+			float radius = sinf(conicalPendulum.halfApexAngle) * conicalPendulum.length;
+			float height = cosf(conicalPendulum.halfApexAngle) * conicalPendulum.length;
+			ball.center.x = conicalPendulum.anchor.x +  cosf(conicalPendulum.angle) * radius;
+			ball.center.y = conicalPendulum.anchor.y - height;
+			ball.center.z = conicalPendulum.anchor.z +  sinf(conicalPendulum.angle) * radius;
 		}
 
 
@@ -724,9 +729,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		DrawGrid(viewPortMatrix, viewMatrix * projectionMatrix);
 
-		DrawSphere({ ball.position, ball.radius }, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
-		DrawPlane(plane, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
+		DrawSphere(ball, viewMatrix * projectionMatrix, viewPortMatrix, 0xFFFFFFFF);
 
+		Vector3 pendulumEnd = Transform(ball.center, viewMatrix * projectionMatrix * viewPortMatrix);
+		Vector3 pendulumStart = Transform(conicalPendulum.anchor, viewMatrix * projectionMatrix * viewPortMatrix);
+
+		Novice::DrawLine(static_cast<int>(pendulumStart.x), static_cast<int>(pendulumStart.y), static_cast<int>(pendulumEnd.x), static_cast<int>(pendulumEnd.y), 0xFFFFFFFF);
 
 
 
@@ -747,3 +755,4 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Novice::Finalize();
 	return 0;
 }
+
