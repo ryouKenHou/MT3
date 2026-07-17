@@ -706,7 +706,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::End();
 
 		if (start) {
-			conicalPendulum.angularVelocity = std::sqrt(9.8f / (conicalPendulum.length * sinf(conicalPendulum.halfApexAngle)));
+			conicalPendulum.angularVelocity = std::sqrt(9.8f / (conicalPendulum.length * cosf(conicalPendulum.halfApexAngle)));
 			conicalPendulum.angle += conicalPendulum.angularVelocity * deltaTime;
 
 			float radius = sinf(conicalPendulum.halfApexAngle) * conicalPendulum.length;
